@@ -1,3 +1,5 @@
+// simulator.ts (完整代码)
+
 export interface SimulationTargets {
   charA: number; charB: number;
   weapA: number; weapB: number;
@@ -12,7 +14,9 @@ export function runOneSimLogic(targets: SimulationTargets): SimResult {
   let charCounter = 1, charGuaranteed = false, weaponGuaranteed = false, fatePoint = 0;
   let totalPulls = 0, stardust = 0;
   const inv = { cA: 0, cB: 0, wA: 0, wB: 0, Std: 0 };
-  const charOwned: Record<string, number> = {};
+  
+  // 调整 1: 假设常驻五星角色已拥有，确保第一次歪也能获得星辉
+  const charOwned: Record<string, number> = { "Std": 1 };
 
   const getStardust = (name: string) => {
     const num = charOwned[name] || 0;
@@ -28,7 +32,13 @@ export function runOneSimLogic(targets: SimulationTargets): SimResult {
       let pGold = 0;
       while (true) {
         totalPulls++; pGold++;
-        if (totalPulls % 9 === 0) stardust += 2;
+        
+        // 调整 2: 优化四星产出的星辉期望值 (保留你原有的触发逻辑)
+        if (totalPulls % 9 === 0) {
+            // 简单模型：假设产出的四星里，一半是给5星辉的满命角色，一半是给2星辉的武器/未满命角色
+            stardust += (Math.random() < 0.5) ? 5 : 2;
+        }
+        
         const prob = 0.006 + Math.max(0, pGold - 73) * 0.06;
         if (Math.random() < prob) {
           let isUp = false;
@@ -44,7 +54,11 @@ export function runOneSimLogic(targets: SimulationTargets): SimResult {
             }
           }
           stardust += getStardust(isUp ? key : "Std");
-          if (isUp) inv[key]++;
+          if (isUp) {
+            inv[key]++;
+          } else {
+            inv['Std']++; // 修正: 歪了也要计入库存
+          }
           break;
         }
       }
@@ -57,9 +71,17 @@ export function runOneSimLogic(targets: SimulationTargets): SimResult {
     let pGold = 0;
     while (true) {
       totalPulls++; pGold++;
-      if (totalPulls % 9 === 0) stardust += 2;
+      
+      // 调整 2 (同步修改): 武器池的四星也使用同样的期望模型
+      if (totalPulls % 9 === 0) {
+        stardust += (Math.random() < 0.5) ? 5 : 2;
+      }
+      
       const prob = 0.007 + Math.max(0, pGold - 62) * 0.07;
       if (Math.random() < prob) {
+        // 修复 3: 任何5星武器出金，都无条件给10个星辉
+        stardust += 10;
+        
         let res = "";
         if (fatePoint === 1) { res = currentFocus; fatePoint = 0; }
         else {
