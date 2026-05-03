@@ -122,7 +122,7 @@ export default function GenshinSimulator() {
                 <Input type="number" value={fates} onChange={e => setFates(Number(e.target.value))} className="w-28" />
               </div>
               <div className="flex items-center gap-2">
-                <Label>模拟次数:</Label>
+                <Label>模拟次数(一般10万就够了):</Label>
                 <Input type="number" value={simCount} onChange={e => setSimCount(Number(e.target.value))} className="w-32" />
               </div>
               <Button onClick={startSim} disabled={loading} className="bg-[#FFB7C5] hover:bg-[#ff9eb2] text-zinc-900 font-bold transition-all">
