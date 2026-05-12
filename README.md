@@ -12,7 +12,7 @@
 
 ## $\color{#FF69B4}{\textbf{“占卜”指南}}$
 简单说，这就是一个部族里的灵性白痴也会用的工具：
--  $\color{#FF1493}{\textbf{打开抽卡计算器：}}$  $\color{#FF69B4}{「https://genshinpull.pages.dev」}$ 
+-  $\color{#FF1493}{\textbf{打开抽卡计算器：}}$  https://genshinpull.pages.dev
 
 -  $\color{#FF1493}{\textbf{掏出你的家底：}}$ 在 $\color{#FF69B4}{「已有粉球」}$ 框里，老老实实填上你攒的那点可怜的纠缠之缘。嗯？哇，旅行者，你居然攒了这么多粉球，该、该不会全都是给我的吧!
 
