@@ -114,7 +114,7 @@ export default function GenshinSimulator() {
         
         {/* --- 标题与 GitHub 链接区 --- */}
         <div className="text-center mb-8 space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight">原神 5.0+ 抽卡概率模拟器</h1>
+          <h1 className="text-3xl font-bold tracking-tight">原神抽卡概率计算器</h1>
           <a 
             href="https://github.com/FylzX/genshinpull" 
             target="_blank" 
