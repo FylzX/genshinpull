@@ -306,6 +306,7 @@ export default function GenshinSimulator() {
             <CardContent className="p-6 flex flex-col items-center justify-center space-y-3">
               <p className="text-lg font-bold text-zinc-700 dark:text-zinc-200 tracking-wide">
                 继续往下滑欣赏奶奶
+                多刷新几次, 有惊喜!
               </p>
               <svg 
                 className="w-8 h-8 text-[#FFB7C5] animate-bounce" 
