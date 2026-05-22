@@ -128,3 +128,13 @@
     @apply font-sans;
   }
 }
+/* 隐藏全局（浏览器右侧）滚动条 */
+html, body {
+  -ms-overflow-style: none;  /* IE 和 Edge */
+  scrollbar-width: none;     /* Firefox */
+}
+
+html::-webkit-scrollbar, 
+body::-webkit-scrollbar {
+  display: none;             /* Chrome, Safari 和 Opera */
+}
