@@ -293,7 +293,7 @@ export default function GenshinSimulator() {
               <Card className="shadow-lg border-white/50 bg-white/85 dark:bg-zinc-950/85 backdrop-blur-md w-full">
                 <CardHeader>
                   <CardTitle className="flex justify-between items-end">
-                    <span>📊 抽卡消耗偏态分布图</span>
+                    <span>📊 抽卡消耗分布图</span>
                     <span className="text-sm font-normal text-zinc-500">
                       最欧: <b className="text-[#FFB7C5]">{report.pulls[0]}抽</b> ｜ 最非: <b className="text-orange-500">{report.pulls[report.pulls.length-1]}抽</b>
                     </span>
@@ -346,7 +346,7 @@ export default function GenshinSimulator() {
                 </Card>
 
                 <Card className="shadow-lg border-white/50 bg-white/85 dark:bg-zinc-950/85 backdrop-blur-md">
-                  <CardHeader><CardTitle>📝 数学期望深度报告</CardTitle></CardHeader>
+                  <CardHeader><CardTitle>📝 期望报告</CardTitle></CardHeader>
                   <CardContent className="bg-zinc-100/50 dark:bg-zinc-900/50 rounded-lg p-6 font-mono text-sm space-y-3 leading-relaxed border border-zinc-200/50">
                     <p>模拟平均总消耗: <span className="text-[#FFB7C5] font-bold text-base">{report.avgPulls.toFixed(1)} 抽</span></p>
                     <p>白板理论总期望: {report.theoryAvg.toFixed(1)} 抽 <span className="text-xs text-zinc-500">(0垫0保底对比参考)</span></p>
