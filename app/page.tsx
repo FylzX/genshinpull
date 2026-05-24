@@ -32,10 +32,10 @@ export default function GenshinSimulator() {
   const videoRef = useRef<HTMLVideoElement>(null);
 
   const [fates, setFates] = useState(1100);
+  const [useStarglitter, setUseStarglitter] = useState(false);
   const [simCount, setSimCount] = useState(100000);
   const [loading, setLoading] = useState(false);
   
-  // 更新 Targets 初始状态，包含垫池子和大保底
   const [targets, setTargets] = useState<SimulationTargets>({ 
     charA: 7, charB: 0, weapA: 1, weapB: 0,
     charPity: 0, weapPity: 0, isCharGuaranteed: false
@@ -76,14 +76,19 @@ export default function GenshinSimulator() {
     const results = await runSimulation(targets, simCount);
     
     const pulls = results.map(r => r.totalPulls).sort((a, b) => a - b);
-    const successCount = pulls.filter(p => p <= fates).length;
+    
+    let successCount = 0;
+    if (useStarglitter) {
+      successCount = results.filter(r => (r.totalPulls - Math.floor(r.stardust / 5)) <= fates).length;
+    } else {
+      successCount = pulls.filter(p => p <= fates).length;
+    }
     const prob = successCount / Math.max(1, simCount);
     
     const avgPulls = pulls.reduce((a, b) => a + b, 0) / simCount;
     const avgDust = results.reduce((a, b) => a + b.stardust, 0) / simCount;
     const avgBallsBack = avgDust >= 5 ? Math.floor(avgDust / 5) : 0;
     
-    // 由于加入了垫池子和大保底，理论期望的计算极其复杂且没有太大意义，这里依然保持原来的纯净模型作为参考对比
     const theoryAvg = (targets.charA + targets.charB) * 93.46 + (targets.weapA + targets.weapB) * 66.5;
 
     const BINS_COUNT = 40; 
@@ -144,9 +149,18 @@ export default function GenshinSimulator() {
     return null;
   };
 
+  // 通过实际的模拟结果，反推当前的粉球“无限续杯”后能换多少抽 (等比数列求和计算法)
+  let actualReturnPullsDisplay: number | string = "(待计算)";
+  let actualTotalPullsDisplay: number | string = "(待计算)";
+  if (report && report.avgPulls > 0) {
+    const returnRate = report.avgBallsBack / report.avgPulls;
+    const actualReturn = Math.floor((fates * returnRate) / (1 - returnRate));
+    actualReturnPullsDisplay = actualReturn;
+    actualTotalPullsDisplay = fates + actualReturn;
+  }
+
   return (
     <>
-      {/* 动态背景层 */}
       <div className="fixed inset-0 -z-10 bg-zinc-900 overflow-hidden">
         <div 
           className={`absolute inset-0 bg-cover bg-center bg-no-repeat transition-opacity duration-1000 ease-in-out ${
@@ -192,22 +206,65 @@ export default function GenshinSimulator() {
             <CardHeader><CardTitle>🎯 设定目标与卡池状态</CardTitle></CardHeader>
             <CardContent className="space-y-6">
               
-              {/* --- 顶部：原有的粉球和计算按钮 --- */}
-              <div className="flex flex-wrap items-center gap-6">
-                <div className="flex items-center gap-2">
-                  <Label className="font-bold text-zinc-700 dark:text-zinc-300">💰 已有粉球:</Label>
-                  <Input type="number" value={fates} onChange={e => setFates(Number(e.target.value))} className="w-28 bg-white/50 dark:bg-black/50" />
+              {/* --- 顶部：粉球与星辉计算框 --- */}
+              <div className="flex flex-col">
+                <div className="flex flex-wrap items-center gap-6">
+                  <div className="flex items-center gap-2">
+                    <Label className="font-bold text-zinc-700 dark:text-zinc-300">💰 已有粉球:</Label>
+                    <Input type="number" value={fates} onChange={e => setFates(Number(e.target.value))} className="w-28 bg-white/50 dark:bg-black/50" />
+                  </div>
+                  
+                  <div className="flex items-center space-x-2 border-zinc-300 dark:border-zinc-700">
+                    <input 
+                      type="checkbox" 
+                      id="use-starglitter" 
+                      checked={useStarglitter}
+                      onChange={(e) => setUseStarglitter(e.target.checked)}
+                      className="w-5 h-5 accent-[#FFB7C5] cursor-pointer rounded-sm border-zinc-300"
+                    />
+                    <Label htmlFor="use-starglitter" className="cursor-pointer font-bold text-zinc-700 dark:text-zinc-300 select-none">
+                      算上返还星辉
+                    </Label>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <Label className="text-zinc-600">模拟次数(10万):</Label>
+                    <Input type="number" value={simCount} onChange={e => setSimCount(Number(e.target.value))} className="w-32 bg-white/50 dark:bg-black/50" />
+                  </div>
+                  
+                  <Button onClick={startSim} disabled={loading} className="bg-[#FFB7C5] hover:bg-[#ff9eb2] text-zinc-900 font-bold transition-all shadow-md ml-auto sm:ml-0">
+                    {loading ? "计算中..." : "开始计算"}
+                  </Button>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Label className="text-zinc-600">模拟次数(10万):</Label>
-                  <Input type="number" value={simCount} onChange={e => setSimCount(Number(e.target.value))} className="w-32 bg-white/50 dark:bg-black/50" />
+
+                {/* 利用纯 CSS Grid 技巧实现的完美丝滑折叠动画 */}
+                <div className={`grid transition-[grid-template-rows] duration-500 ease-in-out ${useStarglitter ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
+                  <div className="overflow-hidden">
+                    <div className="pt-4">
+                      {/* 完美对齐下面的背景、边框及圆角 */}
+                      <div className="text-zinc-900 dark:text-zinc-100 text-sm font-medium bg-[#fff0f5]/50 dark:bg-[#2a1a20]/50 px-5 py-3 rounded-xl border border-[#FFB7C5]/30 w-max shadow-sm">
+                        <span className="text-[#FFB7C5] font-black text-lg pr-1">{fates}</span> 粉球 
+                        <span className="ml-2 pr-1">预计返还</span> 
+                        {report ? (
+                          <>
+                            <span className="text-[#FFB7C5] font-black text-lg px-1">{actualReturnPullsDisplay}</span> 抽
+                            <span className="ml-2 pr-1">共</span>
+                            <span className="text-[#FFB7C5] font-black text-lg px-1">{actualTotalPullsDisplay}</span> 抽
+                          </>
+                        ) : (
+                          <>
+                            <span className="text-[#FFB7C5] font-bold px-1">{actualReturnPullsDisplay}</span>
+                            <span className="ml-2 pr-1">共</span>
+                            <span className="text-[#FFB7C5] font-bold px-1">{actualTotalPullsDisplay}</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <Button onClick={startSim} disabled={loading} className="bg-[#FFB7C5] hover:bg-[#ff9eb2] text-zinc-900 font-bold transition-all shadow-md">
-                  {loading ? "计算中..." : "开始计算"}
-                </Button>
               </div>
 
-              {/* --- 中部：新增的当前卡池状态（垫池子、大保底） --- */}
+              {/* --- 中部：当前卡池状态（垫池子、大保底） --- */}
               <div className="flex flex-wrap items-center gap-6 p-4 rounded-xl bg-[#fff0f5]/50 dark:bg-[#2a1a20]/50 border border-[#FFB7C5]/30">
                 <div className="flex items-center gap-3">
                   <Label className="font-semibold text-zinc-700 dark:text-zinc-300">角色池已垫:</Label>
@@ -397,8 +454,7 @@ export default function GenshinSimulator() {
           <Card className="shadow-lg border-white/50 bg-white/85 dark:bg-zinc-950/85 backdrop-blur-md mt-8">
             <CardContent className="p-6 flex flex-col items-center justify-center space-y-3">
               <p className="text-lg font-bold text-zinc-700 dark:text-zinc-200 tracking-wide">
-                继续往下滑欣赏奶奶
-                多刷新几次, 有惊喜!
+                继续往下滑欣赏奶奶(多刷新几次有惊喜!)
               </p>
               <svg 
                 className="w-8 h-8 text-[#FFB7C5] animate-bounce" 
