@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react" 
+import { useState, useEffect, useRef } from "react" 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -19,21 +19,50 @@ const BACKGROUND_IMAGES = [
   "/backgrounds/bg3.webp",
 ];
 
+// 新增：视频背景列表
+const BACKGROUND_VIDEOS = [
+  "/backgrounds/1.mp4",
+  "/backgrounds/2.mp4",
+  "/backgrounds/3.mp4",
+];
+
 export default function GenshinSimulator() {
+  // 背景相关状态
   const [bgImage, setBgImage] = useState("");
+  const [bgVideo, setBgVideo] = useState("");
+  const [showVideo, setShowVideo] = useState(true); // 控制当前显示的是视频还是图片
+  const [isVideoSupported, setIsVideoSupported] = useState(true); // 探测浏览器是否支持/允许播放
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  // 计算相关状态
   const [fates, setFates] = useState(1100);
   const [simCount, setSimCount] = useState(100000);
   const [loading, setLoading] = useState(false);
-  
   const [targets, setTargets] = useState<SimulationTargets>({ charA: 7, charB: 0, weapA: 1, weapB: 0 });
   const [names, setNames] = useState({ cA: "茜特菈莉", cB: "希诺宁", wA: "祭星者之望", wB: "岩峰巡歌" });
-  
   const [report, setReport] = useState<any>(null);
 
   useEffect(() => {
+    // 客户端挂载后，随机抽取图片和视频
     const randomBg = BACKGROUND_IMAGES[Math.floor(Math.random() * BACKGROUND_IMAGES.length)];
+    const randomVid = BACKGROUND_VIDEOS[Math.floor(Math.random() * BACKGROUND_VIDEOS.length)];
     setBgImage(randomBg);
+    setBgVideo(randomVid);
   }, []);
+
+  // 监听视频状态，处理浏览器禁止自动播放（如手机省电模式）的情况
+  useEffect(() => {
+    if (showVideo && videoRef.current && bgVideo) {
+      const playPromise = videoRef.current.play();
+      if (playPromise !== undefined) {
+        playPromise.catch((error) => {
+          console.warn("浏览器阻止了视频自动播放，降级为图片背景", error);
+          setIsVideoSupported(false);
+          setShowVideo(false);
+        });
+      }
+    }
+  }, [showVideo, bgVideo]);
 
   const startSim = async () => {
     if (names.cA === names.cB && targets.charB > 0) {
@@ -115,13 +144,42 @@ export default function GenshinSimulator() {
 
   return (
     <>
-      {/* 核心修复：独立出来的全屏固定背景层，完美兼容手机端浏览器 */}
-      <div 
-        className="fixed inset-0 -z-10 bg-cover bg-center bg-no-repeat transition-all duration-700"
-        style={{ backgroundImage: bgImage ? `url(${bgImage})` : 'none' }}
-      />
+      {/* --- 高级动态背景层 开始 --- */}
+      <div className="fixed inset-0 -z-10 bg-zinc-900 overflow-hidden">
+        
+        {/* 1. 静态图片层 */}
+        <div 
+          className={`absolute inset-0 bg-cover bg-center bg-no-repeat transition-opacity duration-1000 ease-in-out ${
+            !showVideo ? 'opacity-100' : 'opacity-0'
+          }`}
+          style={{ backgroundImage: bgImage ? `url(${bgImage})` : 'none' }}
+        />
 
-      {/* 内容层：去掉了原来的 bg-fixed 与背景 style 属性 */}
+        {/* 2. 动态视频层 */}
+        {bgVideo && isVideoSupported && (
+          <video
+            ref={videoRef}
+            src={bgVideo}
+            autoPlay
+            loop
+            muted
+            playsInline // 必须加，防止iOS自动全屏
+            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ease-in-out ${
+              showVideo ? 'opacity-100' : 'opacity-0'
+            }`}
+            onError={() => {
+              // 如果视频文件损坏或加载失败，强制降级为图片
+              console.warn("视频加载失败，降级为图片背景");
+              setIsVideoSupported(false);
+              setShowVideo(false);
+            }}
+          />
+        )}
+      </div>
+      {/* --- 高级动态背景层 结束 --- */}
+
+
+      {/* 内容层 */}
       <div className="min-h-screen p-4 md:p-8">
         <div className="max-w-6xl mx-auto space-y-6">
           
@@ -318,7 +376,6 @@ export default function GenshinSimulator() {
             </div>
           )}
 
-          {/* --- 欣赏奶奶卡片 --- */}
           <Card className="shadow-lg border-white/50 bg-white/85 dark:bg-zinc-950/85 backdrop-blur-md mt-8">
             <CardContent className="p-6 flex flex-col items-center justify-center space-y-3">
               <p className="text-lg font-bold text-zinc-700 dark:text-zinc-200 tracking-wide">
@@ -336,12 +393,40 @@ export default function GenshinSimulator() {
             </CardContent>
           </Card>
 
-          {/* --- 全透明占位区域 --- */}
-          {/* 因为背景层现在固定挂在视图视口，内容往上滑动时，底下就会完美露出不拉伸、不变形的背景图啦！ */}
           <div className="h-[100vh] w-full bg-transparent pointer-events-none" />
 
         </div>
       </div>
+
+      {/* --- 右下角视频开关按钮 --- */}
+      {/* 只有在浏览器支持视频，且成功加载了视频时才会显示这个按钮 */}
+      {isVideoSupported && bgVideo && (
+        <div className="fixed bottom-6 right-6 z-50 animate-in fade-in slide-in-from-bottom-5 duration-700">
+          <Button
+            onClick={() => setShowVideo(!showVideo)}
+            variant="outline"
+            className="bg-white/40 hover:bg-white/60 dark:bg-black/40 dark:hover:bg-black/60 backdrop-blur-md border border-white/30 text-zinc-800 dark:text-zinc-200 shadow-xl rounded-full px-5 py-6 transition-all duration-300"
+          >
+            {showVideo ? (
+              <span className="flex items-center gap-2 font-bold">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                  <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                  <polyline points="21 15 16 10 5 21"></polyline>
+                </svg>
+                切换为照片
+              </span>
+            ) : (
+              <span className="flex items-center gap-2 font-bold">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                </svg>
+                切换为动态
+              </span>
+            )}
+          </Button>
+        </div>
+      )}
     </>
   )
 }
