@@ -18,8 +18,6 @@ const BACKGROUND_IMAGES = [
   "/backgrounds/bg2.webp",
   "/backgrounds/bg3.webp",
 ];
-
-// 新增：视频背景列表
 const BACKGROUND_VIDEOS = [
   "/backgrounds/1.mp4",
   "/backgrounds/2.mp4",
@@ -27,30 +25,32 @@ const BACKGROUND_VIDEOS = [
 ];
 
 export default function GenshinSimulator() {
-  // 背景相关状态
   const [bgImage, setBgImage] = useState("");
   const [bgVideo, setBgVideo] = useState("");
-  const [showVideo, setShowVideo] = useState(true); // 控制当前显示的是视频还是图片
-  const [isVideoSupported, setIsVideoSupported] = useState(true); // 探测浏览器是否支持/允许播放
+  const [showVideo, setShowVideo] = useState(true); 
+  const [isVideoSupported, setIsVideoSupported] = useState(true); 
   const videoRef = useRef<HTMLVideoElement>(null);
 
-  // 计算相关状态
   const [fates, setFates] = useState(1100);
   const [simCount, setSimCount] = useState(100000);
   const [loading, setLoading] = useState(false);
-  const [targets, setTargets] = useState<SimulationTargets>({ charA: 7, charB: 0, weapA: 1, weapB: 0 });
+  
+  // 更新 Targets 初始状态，包含垫池子和大保底
+  const [targets, setTargets] = useState<SimulationTargets>({ 
+    charA: 7, charB: 0, weapA: 1, weapB: 0,
+    charPity: 0, weapPity: 0, isCharGuaranteed: false
+  });
   const [names, setNames] = useState({ cA: "茜特菈莉", cB: "希诺宁", wA: "祭星者之望", wB: "岩峰巡歌" });
+  
   const [report, setReport] = useState<any>(null);
 
   useEffect(() => {
-    // 客户端挂载后，随机抽取图片和视频
     const randomBg = BACKGROUND_IMAGES[Math.floor(Math.random() * BACKGROUND_IMAGES.length)];
     const randomVid = BACKGROUND_VIDEOS[Math.floor(Math.random() * BACKGROUND_VIDEOS.length)];
     setBgImage(randomBg);
     setBgVideo(randomVid);
   }, []);
 
-  // 监听视频状态，处理浏览器禁止自动播放（如手机省电模式）的情况
   useEffect(() => {
     if (showVideo && videoRef.current && bgVideo) {
       const playPromise = videoRef.current.play();
@@ -82,6 +82,8 @@ export default function GenshinSimulator() {
     const avgPulls = pulls.reduce((a, b) => a + b, 0) / simCount;
     const avgDust = results.reduce((a, b) => a + b.stardust, 0) / simCount;
     const avgBallsBack = avgDust >= 5 ? Math.floor(avgDust / 5) : 0;
+    
+    // 由于加入了垫池子和大保底，理论期望的计算极其复杂且没有太大意义，这里依然保持原来的纯净模型作为参考对比
     const theoryAvg = (targets.charA + targets.charB) * 93.46 + (targets.weapA + targets.weapB) * 66.5;
 
     const BINS_COUNT = 40; 
@@ -144,31 +146,23 @@ export default function GenshinSimulator() {
 
   return (
     <>
-      {/* --- 高级动态背景层 开始 --- */}
+      {/* 动态背景层 */}
       <div className="fixed inset-0 -z-10 bg-zinc-900 overflow-hidden">
-        
-        {/* 1. 静态图片层 */}
         <div 
           className={`absolute inset-0 bg-cover bg-center bg-no-repeat transition-opacity duration-1000 ease-in-out ${
             !showVideo ? 'opacity-100' : 'opacity-0'
           }`}
           style={{ backgroundImage: bgImage ? `url(${bgImage})` : 'none' }}
         />
-
-        {/* 2. 动态视频层 */}
         {bgVideo && isVideoSupported && (
           <video
             ref={videoRef}
             src={bgVideo}
-            autoPlay
-            loop
-            muted
-            playsInline // 必须加，防止iOS自动全屏
+            autoPlay loop muted playsInline
             className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ease-in-out ${
               showVideo ? 'opacity-100' : 'opacity-0'
             }`}
             onError={() => {
-              // 如果视频文件损坏或加载失败，强制降级为图片
               console.warn("视频加载失败，降级为图片背景");
               setIsVideoSupported(false);
               setShowVideo(false);
@@ -176,55 +170,36 @@ export default function GenshinSimulator() {
           />
         )}
       </div>
-      {/* --- 高级动态背景层 结束 --- */}
 
-
-      {/* 内容层 */}
       <div className="min-h-screen p-4 md:p-8">
         <div className="max-w-6xl mx-auto space-y-6">
           
           <div className="text-center mb-8 space-y-2 bg-white/70 dark:bg-black/50 backdrop-blur-sm p-4 rounded-2xl shadow-sm inline-block mx-auto flex flex-col items-center">
             <h1 className="text-3xl font-bold tracking-tight">原神抽卡概率计算器</h1>
             <div className="flex flex-col items-center gap-1">
-              <a 
-                href="https://github.com/FylzX/genshinpull" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 text-sm font-medium text-zinc-600 hover:text-[#FFB7C5] transition-colors duration-300"
-              >
+              <a href="https://github.com/FylzX/genshinpull" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-sm font-medium text-zinc-600 hover:text-[#FFB7C5] transition-colors duration-300">
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
                   <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
-                </svg>
-                Github项目地址
+                </svg> Github项目地址
               </a>
-              <a 
-                href="/readme.html" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 text-sm font-medium text-zinc-600 hover:text-[#FFB7C5] transition-colors duration-300"
-              >
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                  <polyline points="14 2 14 8 20 8"></polyline>
-                  <line x1="16" y1="13" x2="8" y2="13"></line>
-                  <line x1="16" y1="17" x2="8" y2="17"></line>
-                  <polyline points="10 9 9 9 8 9"></polyline>
-                </svg>
-                [点我]奶奶准备的使用说明
+              <a href="/readme.html" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-sm font-medium text-zinc-600 hover:text-[#FFB7C5] transition-colors duration-300">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg> [点我]奶奶准备的使用说明
               </a>
             </div>
           </div>
 
           <Card className="shadow-lg border-white/50 bg-white/85 dark:bg-zinc-950/85 backdrop-blur-md">
-            <CardHeader><CardTitle>🎯 设定目标</CardTitle></CardHeader>
+            <CardHeader><CardTitle>🎯 设定目标与卡池状态</CardTitle></CardHeader>
             <CardContent className="space-y-6">
+              
+              {/* --- 顶部：原有的粉球和计算按钮 --- */}
               <div className="flex flex-wrap items-center gap-6">
                 <div className="flex items-center gap-2">
-                  <Label>已有粉球:</Label>
+                  <Label className="font-bold text-zinc-700 dark:text-zinc-300">💰 已有粉球:</Label>
                   <Input type="number" value={fates} onChange={e => setFates(Number(e.target.value))} className="w-28 bg-white/50 dark:bg-black/50" />
                 </div>
                 <div className="flex items-center gap-2">
-                  <Label>模拟次数(一般10万就够了):</Label>
+                  <Label className="text-zinc-600">模拟次数(10万):</Label>
                   <Input type="number" value={simCount} onChange={e => setSimCount(Number(e.target.value))} className="w-32 bg-white/50 dark:bg-black/50" />
                 </div>
                 <Button onClick={startSim} disabled={loading} className="bg-[#FFB7C5] hover:bg-[#ff9eb2] text-zinc-900 font-bold transition-all shadow-md">
@@ -232,6 +207,49 @@ export default function GenshinSimulator() {
                 </Button>
               </div>
 
+              {/* --- 中部：新增的当前卡池状态（垫池子、大保底） --- */}
+              <div className="flex flex-wrap items-center gap-6 p-4 rounded-xl bg-[#fff0f5]/50 dark:bg-[#2a1a20]/50 border border-[#FFB7C5]/30">
+                <div className="flex items-center gap-3">
+                  <Label className="font-semibold text-zinc-700 dark:text-zinc-300">角色池已垫:</Label>
+                  <div className="relative">
+                    <Input 
+                      type="number" min={0} max={89} 
+                      value={targets.charPity} 
+                      onChange={e => setTargets({...targets, charPity: Math.min(89, Math.max(0, Number(e.target.value)))})} 
+                      className="w-20 bg-white/70 dark:bg-black/70 pr-6 text-center" 
+                    />
+                    <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-zinc-400">抽</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <Label className="font-semibold text-zinc-700 dark:text-zinc-300">武器池已垫:</Label>
+                  <div className="relative">
+                    <Input 
+                      type="number" min={0} max={79} 
+                      value={targets.weapPity} 
+                      onChange={e => setTargets({...targets, weapPity: Math.min(79, Math.max(0, Number(e.target.value)))})} 
+                      className="w-20 bg-white/70 dark:bg-black/70 pr-6 text-center" 
+                    />
+                    <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-zinc-400">抽</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center space-x-2 pl-4 border-l border-[#FFB7C5]/40">
+                  <input 
+                    type="checkbox" 
+                    id="char-guaranteed" 
+                    checked={targets.isCharGuaranteed}
+                    onChange={(e) => setTargets({...targets, isCharGuaranteed: e.target.checked})}
+                    className="w-5 h-5 accent-[#FFB7C5] cursor-pointer rounded-sm border-zinc-300"
+                  />
+                  <Label htmlFor="char-guaranteed" className="cursor-pointer font-bold text-[#FFB7C5] select-none">
+                    下一个角色必定UP (大保底)
+                  </Label>
+                </div>
+              </div>
+
+              {/* --- 底部：原有的目标设定 --- */}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 border-t border-zinc-200/50 pt-5">
                 {[
                   { label: "角色A", key: "cA", targetKey: "charA", list: CHAR_LIST, max: 7 },
@@ -240,7 +258,7 @@ export default function GenshinSimulator() {
                   { label: "武器B", key: "wB", targetKey: "weapB", list: WEAP_LIST, max: 5 },
                 ].map((item) => (
                   <div key={item.key} className="flex flex-col gap-2">
-                    <Label>{item.label}</Label>
+                    <Label className="text-zinc-500">{item.label} 目标</Label>
                     <div className="flex items-center gap-2">
                       <Select value={(names as any)[item.key]} onValueChange={v => setNames({...names,[item.key]: v})}>
                         <SelectTrigger className={`w-[130px] bg-white/50 dark:bg-black/50 ${isPink((names as any)[item.key]) ? 'text-[#FFB7C5] font-bold border-[#FFB7C5]' : ''}`}>
@@ -331,7 +349,7 @@ export default function GenshinSimulator() {
                   <CardHeader><CardTitle>📝 数学期望深度报告</CardTitle></CardHeader>
                   <CardContent className="bg-zinc-100/50 dark:bg-zinc-900/50 rounded-lg p-6 font-mono text-sm space-y-3 leading-relaxed border border-zinc-200/50">
                     <p>模拟平均总消耗: <span className="text-[#FFB7C5] font-bold text-base">{report.avgPulls.toFixed(1)} 抽</span></p>
-                    <p>模型理论总期望: {report.theoryAvg.toFixed(1)} 抽</p>
+                    <p>白板理论总期望: {report.theoryAvg.toFixed(1)} 抽 <span className="text-xs text-zinc-500">(0垫0保底对比参考)</span></p>
                     <p>每金平均成本: {(report.avgPulls / Math.max(1, (targets.charA+targets.charB+targets.weapA+targets.weapB))).toFixed(1)} 抽</p>
                     <div className="h-px bg-zinc-300 dark:bg-zinc-700 my-4" />
                     <p>平均星辉返还: {report.avgDust.toFixed(1)}</p>
@@ -398,8 +416,6 @@ export default function GenshinSimulator() {
         </div>
       </div>
 
-      {/* --- 右下角视频开关按钮 --- */}
-      {/* 只有在浏览器支持视频，且成功加载了视频时才会显示这个按钮 */}
       {isVideoSupported && bgVideo && (
         <div className="fixed bottom-6 right-6 z-50 animate-in fade-in slide-in-from-bottom-5 duration-700">
           <Button

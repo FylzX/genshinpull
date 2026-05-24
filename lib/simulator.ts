@@ -1,8 +1,11 @@
-// simulator.ts (完整代码)
+// simulator.ts
 
 export interface SimulationTargets {
   charA: number; charB: number;
   weapA: number; weapB: number;
+  charPity?: number;        
+  weapPity?: number;        
+  isCharGuaranteed?: boolean; 
 }
 
 export interface SimResult {
@@ -11,12 +14,17 @@ export interface SimResult {
 }
 
 export function runOneSimLogic(targets: SimulationTargets): SimResult {
-  let charCounter = 1, charGuaranteed = false, weaponGuaranteed = false, fatePoint = 0;
+  let charCounter = 1;
+  let charGuaranteed = targets.isCharGuaranteed || false; 
+  let weaponGuaranteed = false; 
+  let fatePoint = 0;
+  
   let totalPulls = 0, stardust = 0;
   const inv = { cA: 0, cB: 0, wA: 0, wB: 0, Std: 0 };
-  
-  // 调整 1: 假设常驻五星角色已拥有，确保第一次歪也能获得星辉
   const charOwned: Record<string, number> = { "Std": 1 };
+
+  let currentCharPity = targets.charPity || 0;
+  let currentWeapPity = targets.weapPity || 0;
 
   const getStardust = (name: string) => {
     const num = charOwned[name] || 0;
@@ -25,17 +33,18 @@ export function runOneSimLogic(targets: SimulationTargets): SimResult {
     return num <= 6 ? 10 : 25;
   };
 
+  // ---------------- 角色池逻辑 ----------------
   const charKeys = ['cA', 'cB'] as const;
   for (const key of charKeys) {
     const goal = key === 'cA' ? targets.charA : targets.charB;
     while (inv[key] < goal) {
-      let pGold = 0;
+      let pGold = currentCharPity; 
+      currentCharPity = 0; 
+
       while (true) {
         totalPulls++; pGold++;
         
-        // 调整 2: 优化四星产出的星辉期望值 (保留你原有的触发逻辑)
         if (totalPulls % 9 === 0) {
-            // 简单模型：假设产出的四星里，一半是给5星辉的满命角色，一半是给2星辉的武器/未满命角色
             stardust += (Math.random() < 0.5) ? 5 : 2;
         }
         
@@ -48,7 +57,7 @@ export function runOneSimLogic(targets: SimulationTargets): SimResult {
             else {
               if (Math.random() < 0.5) { isUp = true; charCounter = Math.max(0, charCounter - 1); }
               else {
-                if (Math.random() < 0.1) { isUp = true; charCounter = 1; } // 捕获明光
+                if (Math.random() < 0.1) { isUp = true; charCounter = 1; } 
                 else { isUp = false; charGuaranteed = true; charCounter += 1; }
               }
             }
@@ -57,7 +66,7 @@ export function runOneSimLogic(targets: SimulationTargets): SimResult {
           if (isUp) {
             inv[key]++;
           } else {
-            inv['Std']++; // 修正: 歪了也要计入库存
+            inv['Std']++; 
           }
           break;
         }
@@ -65,39 +74,59 @@ export function runOneSimLogic(targets: SimulationTargets): SimResult {
     }
   }
 
+  // ---------------- 武器池逻辑 ----------------
   let currentFocus: 'wA' | 'wB' = 'wA';
   while (inv['wA'] < targets.weapA || inv['wB'] < targets.weapB) {
     if (inv['wA'] >= targets.weapA && currentFocus === "wA") { currentFocus = "wB"; fatePoint = 0; }
-    let pGold = 0;
+    
+    let pGold = currentWeapPity;
+    currentWeapPity = 0; 
+
     while (true) {
       totalPulls++; pGold++;
       
-      // 调整 2 (同步修改): 武器池的四星也使用同样的期望模型
       if (totalPulls % 9 === 0) {
         stardust += (Math.random() < 0.5) ? 5 : 2;
       }
       
       const prob = 0.007 + Math.max(0, pGold - 62) * 0.07;
       if (Math.random() < prob) {
-        // 修复 3: 任何5星武器出金，都无条件给10个星辉
-        stardust += 10;
+        stardust += 10; // 出五星必得10星辉
         
         let res = "";
-        if (fatePoint === 1) { res = currentFocus; fatePoint = 0; }
+        
+        // 【核心修复区域】
+        if (fatePoint === 1) { 
+          res = currentFocus; 
+          fatePoint = 0; // 定轨清零
+          weaponGuaranteed = false; // 👈 修复：只要吃到了定轨，大保底状态也必须强制清零（回到75% / 25%）
+        }
         else {
           const upProb = weaponGuaranteed ? 1.0 : 0.75;
           if (Math.random() < upProb) {
-            weaponGuaranteed = false;
-            if (Math.random() < 0.5) { res = currentFocus; fatePoint = 0; }
-            else { res = currentFocus === "wA" ? "wB" : "wA"; fatePoint = 1; }
-          } else { res = "Std"; weaponGuaranteed = true; fatePoint = 1; }
+            weaponGuaranteed = false; // 抽中了UP武器，大保底状态清零
+            if (Math.random() < 0.5) { 
+              res = currentFocus; 
+              fatePoint = 0; // 抽中了想要的UP武器，定轨清零
+            }
+            else { 
+              res = currentFocus === "wA" ? "wB" : "wA"; 
+              fatePoint = 1; // 抽中了另一把UP武器，定轨+1
+            }
+          } else { 
+            res = "Std"; 
+            weaponGuaranteed = true; // 歪了常驻，激活大保底
+            fatePoint = 1; // 定轨+1
+          }
         }
+        
         if (res in inv) inv[res as keyof typeof inv]++;
-        break;
+        break; // 当前五星抽取结束，跳出内层while循环
       }
     }
     if (inv['wA'] >= targets.weapA && inv['wB'] >= targets.weapB) break;
   }
+  
   return { totalPulls, stardust, inv };
 }
 
