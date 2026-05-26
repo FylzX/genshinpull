@@ -295,7 +295,7 @@ export default function GenshinSimulator() {
                 </svg> Github项目地址
               </a>
               <a href="/readme.html" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-sm font-medium text-zinc-600 hover:text-[#FFB7C5] transition-colors duration-300">
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg> [点我]奶奶准备的使用说明
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg> [点这里]奶奶给你准备的使用说明
               </a>
             </div>
           </div>
@@ -328,8 +328,13 @@ export default function GenshinSimulator() {
                     <Input type="number" value={simCount} onChange={e => setSimCount(Number(e.target.value))} className="w-32 bg-white/50 dark:bg-black/50" />
                   </div>
                   
-                  <Button onClick={startSim} disabled={loading} className="bg-[#FFB7C5] hover:bg-[#ff9eb2] text-zinc-900 font-bold transition-all shadow-md ml-auto sm:ml-0">
-                    {loading ? "计算中..." : "开始计算"}
+                  {/* ====== 修改点 1：放大按钮尺寸，添加光环发光阴影和悬浮动画 ====== */}
+                  <Button 
+                    onClick={startSim} 
+                    disabled={loading} 
+                    className="bg-[#FFB7C5] hover:bg-[#ff9eb2] text-zinc-900 font-extrabold text-lg h-14 px-8 rounded-xl transition-all shadow-[0_0_15px_rgba(255,183,197,0.6)] hover:shadow-[0_0_25px_rgba(255,183,197,0.9)] hover:-translate-y-0.5 ml-auto sm:ml-0 ring-4 ring-[#FFB7C5]/30"
+                  >
+                    {loading ? "计算中..." : "✨ 开始计算"}
                   </Button>
                 </div>
 
@@ -544,12 +549,15 @@ export default function GenshinSimulator() {
           )}
 
           <Card className="shadow-lg border-white/50 bg-white/85 dark:bg-zinc-950/85 backdrop-blur-md mt-8">
-            <CardContent className="p-6 flex flex-col items-center justify-center space-y-3">
+            <CardContent className="p-6 flex flex-col items-center justify-center space-y-2 text-center">
               <p className="text-lg font-bold text-zinc-700 dark:text-zinc-200 tracking-wide">
-                继续往下滑欣赏奶奶(多刷新几次有惊喜!)
+                下滑欣赏奶奶我的美貌~
+              </p>
+              <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
+                不想看？哼，随便你！我，我才不在乎呢...
               </p>
               <svg 
-                className="w-8 h-8 text-[#FFB7C5] animate-bounce" 
+                className="w-8 h-8 text-[#FFB7C5] animate-bounce mt-2" 
                 fill="none" 
                 stroke="currentColor" 
                 viewBox="0 0 24 24"
@@ -564,12 +572,12 @@ export default function GenshinSimulator() {
         </div>
       </div>
 
-      {/* 右下角悬浮控制区域：使用 relative 布局，配合 absolute 解决阴影裁剪并保持等距 */}
-      <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3 relative">
+      {/* ====== 修改点 2：删除了 div 最末尾冲突的 relative，增加高 z-index，让它彻底固定在右下角 ====== */}
+      <div className="fixed bottom-6 right-6 z-[9999] flex flex-col items-end gap-3">
         
-        {/* 1. 返回顶部：脱离标准文档流直接悬浮在上方，永远不会裁剪阴影 */}
+        {/* 返回顶部 */}
         <div 
-          className={`absolute bottom-[100%] right-0 mb-3 transition-all duration-500 ease-out ${
+          className={`absolute bottom-[100%] right-0 mb-3 transition-all duration-500 ease-out origin-bottom ${
             showScrollTop ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-4 scale-95 pointer-events-none'
           }`}
         >
@@ -587,7 +595,7 @@ export default function GenshinSimulator() {
           </Button>
         </div>
 
-        {/* 2. 下一张 */}
+        {/* 下一张 */}
         {!showVideo && (
           <Button
             onClick={handleNextImage}
@@ -602,7 +610,7 @@ export default function GenshinSimulator() {
           </Button>
         )}
 
-        {/* 3. 切换动态/照片 */}
+        {/* 切换动态/照片 */}
         {isVideoSupported && bgVideo && (
           <Button
             onClick={() => setShowVideo(!showVideo)}
