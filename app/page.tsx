@@ -13,22 +13,19 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGri
 const CHAR_LIST = ["茜特菈莉", "洛恩", "桑多涅", "尼可", "希诺宁", "恰斯卡", "玛薇卡", "莉奈娅", "法尔伽", "兹白", "哥伦比娅", "杜林", "奈芙尔", "菲林斯", "菈乌玛", "伊涅芙", "丝柯克", "爱可菲", "瓦蕾莎", "基尼奇", "玛拉妮", "艾梅莉埃", "希格雯", "克洛琳德", "阿蕾奇诺", "千织", "闲云", "娜维娅", "芙宁娜", "莱欧斯利", "那维莱特", "林尼", "白术", "艾尔海森", "流浪者", "纳西妲", "妮露", "赛诺", "提纳里", "夜兰", "神里绫人", "八重神子", "申鹤", "荒泷一斗", "珊瑚宫心海", "雷电将军", "宵宫", "神里绫华", "枫原万叶", "优菈", "胡桃", "魈", "甘雨", "阿贝多", "钟离", "达达利亚", "可莉", "温迪"];
 const WEAP_LIST = ["祭星者之望", "灾悔", "超越之匙", "尘光七谕", "岩峰巡歌", "星鹭赤羽", "焚曜千阳", "霜结的誓金枝", "狼的武功歌", "朏魄含光", "帷间夜曲", "黎明破晓之史", "黑蚀", "真语秘匣", "纺夜天镜", "血染荒城", "支离轮光", "苍耀", "香韵奏者", "溢彩心念", "寝正月初晴", "冲浪时光", "柔灯挽歌", "赦罪", "白雨心弦", "赤月之形", "有乐御藤切", "鹤鸣余音", "裁断", "静水流涌之辉", "金流监督", "万世流涌大典", "最初的大魔术", "碧落之珑", "苇海信标", "裁叶萃光", "图莱杜拉的回忆", "千夜浮梦", "圣显之钥", "赤沙之杖", "猎人之径", "若水", "波乱月白经津", "神乐之真意", "息灾", "赤角石溃杵", "冬极白星", "薙草之稻光", "不灭月华", "雾切之回光", "飞雷之振弦", "苍古自由之誓", "松籁响起之时", "终末嗟叹之诗", "护摩之杖", "磐岩结绿", "斫峰之刃", "贯虹之槊", "尘世之锁", "无工之剑", "和璞鸢"];
 
-const BACKGROUND_IMAGES = [
-  "/backgrounds/bg1.webp",
-  "/backgrounds/bg2.webp",
-  "/backgrounds/bg3.webp",
-];
 const BACKGROUND_VIDEOS = [
   "/backgrounds/1.mp4",
-  "/backgrounds/2.mp4",
-  "/backgrounds/3.mp4",
 ];
 
 export default function GenshinSimulator() {
-  const [bgImage, setBgImage] = useState("");
+  const [bgLayers, setBgLayers] = useState({ img1: "", img2: "" });
+  const [activeLayer, setActiveLayer] = useState<1 | 2>(1);
+  const [validImages, setValidImages] = useState<string[]>([]);
+  
   const [bgVideo, setBgVideo] = useState("");
   const [showVideo, setShowVideo] = useState(true); 
   const [isVideoSupported, setIsVideoSupported] = useState(true); 
+  const [showScrollTop, setShowScrollTop] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
 
   const [fates, setFates] = useState(1100);
@@ -44,12 +41,105 @@ export default function GenshinSimulator() {
   
   const [report, setReport] = useState<any>(null);
 
+  // 1. 自动探测新增的图片
   useEffect(() => {
-    const randomBg = BACKGROUND_IMAGES[Math.floor(Math.random() * BACKGROUND_IMAGES.length)];
-    const randomVid = BACKGROUND_VIDEOS[Math.floor(Math.random() * BACKGROUND_VIDEOS.length)];
-    setBgImage(randomBg);
-    setBgVideo(randomVid);
+    let isMounted = true;
+
+    const discoverImages = async () => {
+      const discovered: string[] = [];
+      let missingCount = 0;
+      
+      for (let i = 1; i <= 100; i++) {
+        let found = false;
+        for (const prefix of ['', 'bg']) {
+          const url = `/backgrounds/${prefix}${i}.webp`;
+          try {
+            const res = await fetch(url, { method: 'HEAD', cache: 'no-store' });
+            if (res.ok) {
+              discovered.push(url);
+              found = true;
+              missingCount = 0; 
+            }
+          } catch (e) {
+          }
+        }
+        
+        if (!found) {
+          missingCount++;
+          if (missingCount >= 2) break; 
+        }
+      }
+
+      if (!isMounted) return;
+
+      if (discovered.length > 0) {
+        setValidImages(discovered);
+        let initialImg = discovered[0];
+        try {
+          const lastImg = localStorage.getItem('lastBgImg');
+          const candidates = discovered.filter(img => img !== lastImg);
+          initialImg = candidates.length > 0 
+            ? candidates[Math.floor(Math.random() * candidates.length)] 
+            : discovered[Math.floor(Math.random() * discovered.length)];
+          localStorage.setItem('lastBgImg', initialImg);
+        } catch (e) {}
+
+        setBgLayers({ img1: initialImg, img2: "" });
+      }
+    };
+
+    discoverImages();
+
+    // 2. 视频初始化防重逻辑
+    let newVidIndex = 0;
+    try {
+      const lastVidIndex = localStorage.getItem('lastBgVidIndex');
+      const validVidIndices = BACKGROUND_VIDEOS.map((_, i) => i).filter(i => i.toString() !== lastVidIndex);
+      newVidIndex = validVidIndices.length > 0 
+        ? validVidIndices[Math.floor(Math.random() * validVidIndices.length)] 
+        : 0;
+      localStorage.setItem('lastBgVidIndex', newVidIndex.toString());
+    } catch (error) {}
+
+    setBgVideo(BACKGROUND_VIDEOS[newVidIndex]);
+
+    return () => { isMounted = false; };
   }, []);
+
+  // 滚动监听
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > window.innerHeight * 0.5) {
+        setShowScrollTop(true);
+      } else {
+        setShowScrollTop(false);
+      }
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  const handleNextImage = () => {
+    if (validImages.length <= 1) return; 
+    
+    const currentImg = activeLayer === 1 ? bgLayers.img1 : bgLayers.img2;
+    const candidates = validImages.filter(img => img !== currentImg);
+    const nextImg = candidates[Math.floor(Math.random() * candidates.length)];
+    
+    try { localStorage.setItem('lastBgImg', nextImg); } catch (e) {}
+
+    if (activeLayer === 1) {
+      setBgLayers(prev => ({ ...prev, img2: nextImg }));
+      setActiveLayer(2);
+    } else {
+      setBgLayers(prev => ({ ...prev, img1: nextImg }));
+      setActiveLayer(1);
+    }
+  };
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   useEffect(() => {
     if (showVideo && videoRef.current && bgVideo) {
@@ -149,7 +239,6 @@ export default function GenshinSimulator() {
     return null;
   };
 
-  // 通过实际的模拟结果，反推当前的粉球“无限续杯”后能换多少抽 (等比数列求和计算法)
   let actualReturnPullsDisplay: number | string = "(待计算)";
   let actualTotalPullsDisplay: number | string = "(待计算)";
   if (report && report.avgPulls > 0) {
@@ -162,12 +251,21 @@ export default function GenshinSimulator() {
   return (
     <>
       <div className="fixed inset-0 -z-10 bg-zinc-900 overflow-hidden">
+        {/* 背景图层 1 */}
         <div 
           className={`absolute inset-0 bg-cover bg-center bg-no-repeat transition-opacity duration-1000 ease-in-out ${
-            !showVideo ? 'opacity-100' : 'opacity-0'
+            (!showVideo && activeLayer === 1) ? 'opacity-100' : 'opacity-0'
           }`}
-          style={{ backgroundImage: bgImage ? `url(${bgImage})` : 'none' }}
+          style={{ backgroundImage: bgLayers.img1 ? `url(${bgLayers.img1})` : 'none' }}
         />
+        {/* 背景图层 2 */}
+        <div 
+          className={`absolute inset-0 bg-cover bg-center bg-no-repeat transition-opacity duration-1000 ease-in-out ${
+            (!showVideo && activeLayer === 2) ? 'opacity-100' : 'opacity-0'
+          }`}
+          style={{ backgroundImage: bgLayers.img2 ? `url(${bgLayers.img2})` : 'none' }}
+        />
+
         {bgVideo && isVideoSupported && (
           <video
             ref={videoRef}
@@ -185,7 +283,7 @@ export default function GenshinSimulator() {
         )}
       </div>
 
-      <div className="min-h-screen p-4 md:p-8">
+      <div className="min-h-screen p-4 md:p-8 relative">
         <div className="max-w-6xl mx-auto space-y-6">
           
           <div className="text-center mb-8 space-y-2 bg-white/70 dark:bg-black/50 backdrop-blur-sm p-4 rounded-2xl shadow-sm inline-block mx-auto flex flex-col items-center">
@@ -205,8 +303,6 @@ export default function GenshinSimulator() {
           <Card className="shadow-lg border-white/50 bg-white/85 dark:bg-zinc-950/85 backdrop-blur-md">
             <CardHeader><CardTitle>🎯 设定目标与卡池状态</CardTitle></CardHeader>
             <CardContent className="space-y-6">
-              
-              {/* --- 顶部：粉球与星辉计算框 --- */}
               <div className="flex flex-col">
                 <div className="flex flex-wrap items-center gap-6">
                   <div className="flex items-center gap-2">
@@ -237,11 +333,9 @@ export default function GenshinSimulator() {
                   </Button>
                 </div>
 
-                {/* 利用纯 CSS Grid 技巧实现的完美丝滑折叠动画 */}
                 <div className={`grid transition-[grid-template-rows] duration-500 ease-in-out ${useStarglitter ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
                   <div className="overflow-hidden">
                     <div className="pt-4">
-                      {/* 完美对齐下面的背景、边框及圆角 */}
                       <div className="text-zinc-900 dark:text-zinc-100 text-sm font-medium bg-[#fff0f5]/50 dark:bg-[#2a1a20]/50 px-5 py-3 rounded-xl border border-[#FFB7C5]/30 w-max shadow-sm">
                         <span className="text-[#FFB7C5] font-black text-lg pr-1">{fates}</span> 粉球 
                         <span className="ml-2 pr-1">预计返还</span> 
@@ -264,7 +358,6 @@ export default function GenshinSimulator() {
                 </div>
               </div>
 
-              {/* --- 中部：当前卡池状态（垫池子、大保底） --- */}
               <div className="flex flex-wrap items-center gap-6 p-4 rounded-xl bg-[#fff0f5]/50 dark:bg-[#2a1a20]/50 border border-[#FFB7C5]/30">
                 <div className="flex items-center gap-3">
                   <Label className="font-semibold text-zinc-700 dark:text-zinc-300">角色池已垫:</Label>
@@ -306,7 +399,6 @@ export default function GenshinSimulator() {
                 </div>
               </div>
 
-              {/* --- 底部：原有的目标设定 --- */}
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 border-t border-zinc-200/50 pt-5">
                 {[
                   { label: "角色A", key: "cA", targetKey: "charA", list: CHAR_LIST, max: 7 },
@@ -472,33 +564,71 @@ export default function GenshinSimulator() {
         </div>
       </div>
 
-      {isVideoSupported && bgVideo && (
-        <div className="fixed bottom-6 right-6 z-50 animate-in fade-in slide-in-from-bottom-5 duration-700">
+      {/* 右下角悬浮控制区域：使用 relative 布局，配合 absolute 解决阴影裁剪并保持等距 */}
+      <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3 relative">
+        
+        {/* 1. 返回顶部：脱离标准文档流直接悬浮在上方，永远不会裁剪阴影 */}
+        <div 
+          className={`absolute bottom-[100%] right-0 mb-3 transition-all duration-500 ease-out ${
+            showScrollTop ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-4 scale-95 pointer-events-none'
+          }`}
+        >
+          <Button 
+            onClick={scrollToTop} 
+            className="h-10 px-4 rounded-xl bg-white/70 hover:bg-white/90 dark:bg-zinc-800/80 dark:hover:bg-zinc-700 backdrop-blur-md shadow-md border border-[#FFB7C5]/40 flex items-center justify-center gap-1.5 text-[#FFB7C5] font-bold group transition-all"
+          >
+            <svg 
+              className="w-4 h-4 animate-bounce group-hover:animate-none group-hover:-translate-y-0.5 transition-transform" 
+              fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
+            </svg>
+            返回顶部
+          </Button>
+        </div>
+
+        {/* 2. 下一张 */}
+        {!showVideo && (
+          <Button
+            onClick={handleNextImage}
+            variant="outline"
+            className="animate-in fade-in slide-in-from-bottom-2 duration-500 h-10 px-4 rounded-xl bg-white/60 hover:bg-white/80 dark:bg-black/60 dark:hover:bg-black/80 backdrop-blur-md border border-white/40 text-[#FFB7C5] shadow-md flex items-center justify-center gap-1.5 font-bold transition-all"
+          >
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+              <circle cx="12" cy="13" r="4"></circle>
+            </svg>
+            下一张
+          </Button>
+        )}
+
+        {/* 3. 切换动态/照片 */}
+        {isVideoSupported && bgVideo && (
           <Button
             onClick={() => setShowVideo(!showVideo)}
             variant="outline"
-            className="bg-white/40 hover:bg-white/60 dark:bg-black/40 dark:hover:bg-black/60 backdrop-blur-md border border-white/30 text-zinc-800 dark:text-zinc-200 shadow-xl rounded-full px-5 py-6 transition-all duration-300"
+            className="animate-in fade-in slide-in-from-bottom-5 duration-700 h-10 px-4 rounded-xl bg-white/40 hover:bg-white/60 dark:bg-black/40 dark:hover:bg-black/60 backdrop-blur-md border border-white/30 text-zinc-800 dark:text-zinc-200 shadow-md flex items-center justify-center gap-1.5 font-bold transition-all"
           >
             {showVideo ? (
-              <span className="flex items-center gap-2 font-bold">
-                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <>
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
                   <circle cx="8.5" cy="8.5" r="1.5"></circle>
                   <polyline points="21 15 16 10 5 21"></polyline>
                 </svg>
                 切换为照片
-              </span>
+              </>
             ) : (
-              <span className="flex items-center gap-2 font-bold">
-                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <>
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <polygon points="5 3 19 12 5 21 5 3"></polygon>
                 </svg>
                 切换为动态
-              </span>
+              </>
             )}
           </Button>
-        </div>
-      )}
+        )}
+      </div>
     </>
   )
 }
