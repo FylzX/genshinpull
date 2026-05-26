@@ -28,13 +28,13 @@ export default function GenshinSimulator() {
   const [showScrollTop, setShowScrollTop] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
 
-  const [fates, setFates] = useState(1100);
+  const [fates, setFates] = useState(0);
   const [useStarglitter, setUseStarglitter] = useState(false);
   const [simCount, setSimCount] = useState(100000);
   const [loading, setLoading] = useState(false);
   
   const [targets, setTargets] = useState<SimulationTargets>({ 
-    charA: 7, charB: 0, weapA: 1, weapB: 0,
+    charA: 0, charB: 0, weapA: 0, weapB: 0,
     charPity: 0, weapPity: 0, isCharGuaranteed: false
   });
   const [names, setNames] = useState({ cA: "茜特菈莉", cB: "希诺宁", wA: "祭星者之望", wB: "岩峰巡歌" });
