@@ -29,6 +29,7 @@ export default function GenshinSimulator() {
   const videoRef = useRef<HTMLVideoElement>(null);
 
   const [fates, setFates] = useState(0);
+  const [primos, setPrimos] = useState(0); // 👈 新增原石状态
   const [useStarglitter, setUseStarglitter] = useState(false);
   const [simCount, setSimCount] = useState(100000);
   const [loading, setLoading] = useState(false);
@@ -167,11 +168,14 @@ export default function GenshinSimulator() {
     
     const pulls = results.map(r => r.totalPulls).sort((a, b) => a - b);
     
+    // 👈 核心修复：将原石折算有效抽数代替原本的纯粉球
+    const effectiveFates = fates + Math.floor(primos / 160);
+    
     let successCount = 0;
     if (useStarglitter) {
-      successCount = results.filter(r => (r.totalPulls - Math.floor(r.stardust / 5)) <= fates).length;
+      successCount = results.filter(r => (r.totalPulls - Math.floor(r.stardust / 5)) <= effectiveFates).length;
     } else {
-      successCount = pulls.filter(p => p <= fates).length;
+      successCount = pulls.filter(p => p <= effectiveFates).length;
     }
     const prob = successCount / Math.max(1, simCount);
     
@@ -239,13 +243,15 @@ export default function GenshinSimulator() {
     return null;
   };
 
+  // 👈 核心修复：显示返还的有效抽数
+  const effectiveFates = fates + Math.floor(primos / 160);
   let actualReturnPullsDisplay: number | string = "(待计算)";
   let actualTotalPullsDisplay: number | string = "(待计算)";
   if (report && report.avgPulls > 0) {
     const returnRate = report.avgBallsBack / report.avgPulls;
-    const actualReturn = Math.floor((fates * returnRate) / (1 - returnRate));
+    const actualReturn = Math.floor((effectiveFates * returnRate) / (1 - returnRate));
     actualReturnPullsDisplay = actualReturn;
-    actualTotalPullsDisplay = fates + actualReturn;
+    actualTotalPullsDisplay = effectiveFates + actualReturn;
   }
 
   return (
@@ -310,6 +316,12 @@ export default function GenshinSimulator() {
                     <Input type="number" value={fates} onChange={e => setFates(Number(e.target.value))} className="w-28 bg-white/50 dark:bg-black/50" />
                   </div>
                   
+                  {/* 👈 增加原石输入框 */}
+                  <div className="flex items-center gap-2">
+                    <Label className="font-bold text-zinc-700 dark:text-zinc-300">💎 已有原石:</Label>
+                    <Input type="number" value={primos} onChange={e => setPrimos(Number(e.target.value))} className="w-28 bg-white/50 dark:bg-black/50" />
+                  </div>
+                  
                   <div className="flex items-center space-x-2 border-zinc-300 dark:border-zinc-700">
                     <input 
                       type="checkbox" 
@@ -342,7 +354,8 @@ export default function GenshinSimulator() {
                   <div className="overflow-hidden">
                     <div className="pt-4">
                       <div className="text-zinc-900 dark:text-zinc-100 text-sm font-medium bg-[#fff0f5]/50 dark:bg-[#2a1a20]/50 px-5 py-3 rounded-xl border border-[#FFB7C5]/30 w-max shadow-sm">
-                        <span className="text-[#FFB7C5] font-black text-lg pr-1">{fates}</span> 粉球 
+                        {/* 👈 核心修复：显示转换后的总有效抽数 */}
+                        <span className="text-[#FFB7C5] font-black text-lg pr-1">{effectiveFates}</span> 有效抽数 
                         <span className="ml-2 pr-1">预计返还</span> 
                         {report ? (
                           <>
