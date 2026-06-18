@@ -11,6 +11,8 @@ import { runSimulation, SimulationTargets } from "@/lib/simulator"
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
 
 import avatarData from "./avatar.json"
+// 👇 引入刚刚建好的配置文件
+import bgData from "./background.json"
 
 // ==========================================
 // 🎨 单独拆出来的【茜特菈莉】名字颜色配置
@@ -25,17 +27,14 @@ const isPinkWeapon = (name: string) => name === "祭星者之望";
 const CHAR_LIST = avatarData.map(item => item.zh);
 const WEAP_LIST = ["祭星者之望", "灾悔", "超越之匙", "尘光七谕", "岩峰巡歌", "星鹭赤羽", "焚曜千阳", "霜结的誓金枝", "狼的武功歌", "朏魄含光", "帷间夜曲", "黎明破晓之史", "黑蚀", "真语秘匣", "纺夜天镜", "血染荒城", "支离轮光", "苍耀", "香韵奏者", "溢彩心念", "寝正月初晴", "冲浪时光", "柔灯挽歌", "赦罪", "白雨心弦", "赤月之形", "有乐御藤切", "鹤鸣余音", "裁断", "静水流涌之辉", "金流监督", "万世流涌大典", "最初的大魔术", "碧落之珑", "苇海信标", "裁叶萃光", "图莱杜拉的回忆", "千夜浮梦", "圣显之钥", "赤沙之杖", "猎人之径", "若水", "波乱月白经津", "神乐之真意", "息灾", "赤角石溃杵", "冬极白星", "薙草之稻光", "不灭月华", "雾切之回光", "飞雷之振弦", "苍古自由之誓", "松籁响起之时", "终末嗟叹之诗", "护摩之杖", "磐岩结绿", "斫峰之刃", "贯虹之槊", "尘世之锁", "无工之剑"];
 
-const BACKGROUND_VIDEOS = [
-  "/backgrounds/1.mp4",
-];
-
 export default function GenshinSimulator() {
   const [bgLayers, setBgLayers] = useState({ img1: "", img2: "" });
   const [activeLayer, setActiveLayer] = useState<1 | 2>(1);
   const [validImages, setValidImages] = useState<string[]>([]);
   
   const [bgVideo, setBgVideo] = useState("");
-  const [showVideo, setShowVideo] = useState(true); 
+  // 👇 将默认值改为 false，这样网页刚加载出来就会默认显示图片
+  const [showVideo, setShowVideo] = useState(false); 
   const [isVideoSupported, setIsVideoSupported] = useState(true); 
   const [showScrollTop, setShowScrollTop] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -54,65 +53,53 @@ export default function GenshinSimulator() {
   
   const [report, setReport] = useState<any>(null);
 
+  // 👇 重新改写了初始化逻辑
   useEffect(() => {
     let isMounted = true;
 
-    const discoverImages = async () => {
-      const discovered: string[] = [];
-      let missingCount = 0;
-      
-      for (let i = 1; i <= 100; i++) {
-        let found = false;
-        for (const prefix of ['', 'bg']) {
-          const url = `/backgrounds/${prefix}${i}.webp`;
-          try {
-            const res = await fetch(url, { method: 'HEAD', cache: 'no-store' });
-            if (res.ok) {
-              discovered.push(url);
-              found = true;
-              missingCount = 0; 
-            }
-          } catch (e) {
-          }
-        }
-        
-        if (!found) {
-          missingCount++;
-          if (missingCount >= 2) break; 
-        }
-      }
+    // 1. 直接读取JSON中的图片列表
+    const discovered = bgData.images || [];
+    
+    if (discovered.length > 0) {
+      setValidImages(discovered);
+      let initialImg = discovered[0];
+      try {
+        const lastImg = localStorage.getItem('lastBgImg');
+        const candidates = discovered.filter(img => img !== lastImg);
+        initialImg = candidates.length > 0 
+          ? candidates[Math.floor(Math.random() * candidates.length)] 
+          : discovered[Math.floor(Math.random() * discovered.length)];
+        localStorage.setItem('lastBgImg', initialImg);
+      } catch (e) {}
 
+      // 立即设置图片，确保一开始优先展示
+      setBgLayers({ img1: initialImg, img2: "" });
+
+      // 偷偷在后台预加载剩下的图片，保证切换时丝滑
+      discovered.forEach(src => {
+        const img = new Image();
+        img.src = src;
+      });
+    }
+
+    // 2. 延迟 800 毫秒后再加载视频，确保网络资源优先分配给上面的三张背景图
+    setTimeout(() => {
       if (!isMounted) return;
+      const videos = bgData.videos || [];
+      if (videos.length === 0) return;
 
-      if (discovered.length > 0) {
-        setValidImages(discovered);
-        let initialImg = discovered[0];
-        try {
-          const lastImg = localStorage.getItem('lastBgImg');
-          const candidates = discovered.filter(img => img !== lastImg);
-          initialImg = candidates.length > 0 
-            ? candidates[Math.floor(Math.random() * candidates.length)] 
-            : discovered[Math.floor(Math.random() * discovered.length)];
-          localStorage.setItem('lastBgImg', initialImg);
-        } catch (e) {}
+      let newVidIndex = 0;
+      try {
+        const lastVidIndex = localStorage.getItem('lastBgVidIndex');
+        const validVidIndices = videos.map((_, i) => i).filter(i => i.toString() !== lastVidIndex);
+        newVidIndex = validVidIndices.length > 0 
+          ? validVidIndices[Math.floor(Math.random() * validVidIndices.length)] 
+          : 0;
+        localStorage.setItem('lastBgVidIndex', newVidIndex.toString());
+      } catch (error) {}
 
-        setBgLayers({ img1: initialImg, img2: "" });
-      }
-    };
-
-    discoverImages();
-
-    let newVidIndex = 0;
-    try {
-      const lastVidIndex = localStorage.getItem('lastBgVidIndex');
-      const validVidIndices = BACKGROUND_VIDEOS.map((_, i) => i).filter(i => i.toString() !== lastVidIndex);
-      newVidIndex = validVidIndices.length > 0 
-        ? validVidIndices[Math.floor(Math.random() * validVidIndices.length)] 
-        : 0;
-      localStorage.setItem('lastBgVidIndex', newVidIndex.toString());
-    } catch (error) {}
-
-    setBgVideo(BACKGROUND_VIDEOS[newVidIndex]);
+      setBgVideo(videos[newVidIndex]);
+    }, 800);
 
     return () => { isMounted = false; };
   }, []);
@@ -429,7 +416,6 @@ export default function GenshinSimulator() {
                     <div className="flex items-center gap-2">
                       <Select value={(names as any)[item.key]} onValueChange={v => setNames({...names,[item.key]: v})}>
                         
-                        {/* 🔥 此处进行了高度拉长和强行覆盖shadcn默认截断属性的重构，解决了框外图片挤压/名字溢出截断的问题 */}
                         <SelectTrigger className={`
                           bg-white/50 dark:bg-black/50 transition-all text-left
                           ${item.isChar 
@@ -466,7 +452,6 @@ export default function GenshinSimulator() {
                                     `}
                                   >
                                     <div className="flex flex-row items-center justify-start w-full min-w-0 gap-2.5">
-                                      {/* 赋予 data-avatar-container 属性用于区分内外边框逻辑 */}
                                       <div data-avatar-container className="w-[44px] h-[44px] rounded-md overflow-hidden flex-shrink-0 shadow-sm border border-zinc-300/80 dark:border-zinc-600/80 flex items-center justify-center bg-white/50 dark:bg-zinc-800/50 transition-all">
                                         {charInfo?.icon ? (
                                           // eslint-disable-next-line @next/next/no-img-element
@@ -482,7 +467,6 @@ export default function GenshinSimulator() {
                                   </SelectItem>
                                 )
                               } else {
-                                // ⚔️ 武器池保持原来的样子
                                 return (
                                   <SelectItem key={name} value={name} className={isPinkWeapon(name) ? 'text-[#FFB7C5] font-bold' : ''}>
                                     {name}
@@ -702,7 +686,7 @@ export default function GenshinSimulator() {
                 <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <polygon points="5 3 19 12 5 21 5 3"></polygon>
                 </svg>
-                切换为动态
+                切换为动态背景
               </>
             )}
           </Button>

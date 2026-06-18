@@ -1,0 +1,10 @@
+{
+  "images": [
+    "/backgrounds/bg1.webp",
+    "/backgrounds/bg2.webp",
+    "/backgrounds/bg3.webp"
+  ],
+  "videos": [
+    "/backgrounds/1.mp4"
+  ]
+}
