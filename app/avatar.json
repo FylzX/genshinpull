@@ -1,0 +1,284 @@
+[
+  {
+    "zh": "茜特菈莉",
+    "en": "Citlali",
+    "icon": "/AvatarIcon/UI_AvatarIcon_Citlali.webp"
+  },
+  {
+    "zh": "洛恩",
+    "en": "Lohen",
+    "icon": "/AvatarIcon/UI_AvatarIcon_Lohen.webp"
+  },
+  {
+    "zh": "桑多涅",
+    "en": "MarionetteNew",
+    "icon": "/AvatarIcon/UI_AvatarIcon_MarionetteNew.webp"
+  },
+  {
+    "zh": "尼可",
+    "en": "Nicole",
+    "icon": "/AvatarIcon/UI_AvatarIcon_Nicole.webp"
+  },
+  {
+    "zh": "希诺宁",
+    "en": "Xilonen",
+    "icon": "/AvatarIcon/UI_AvatarIcon_Xilonen.webp"
+  },
+  {
+    "zh": "恰斯卡",
+    "en": "Chasca",
+    "icon": "/AvatarIcon/UI_AvatarIcon_Chasca.webp"
+  },
+  {
+    "zh": "玛薇卡",
+    "en": "Mavuika",
+    "icon": "/AvatarIcon/UI_AvatarIcon_Mavuika.webp"
+  },
+  {
+    "zh": "莉奈娅",
+    "en": "Linnea",
+    "icon": "/AvatarIcon/UI_AvatarIcon_Linnea.webp"
+  },
+  {
+    "zh": "法尔伽",
+    "en": "Varka",
+    "icon": "/AvatarIcon/UI_AvatarIcon_Varka.webp"
+  },
+  {
+    "zh": "兹白",
+    "en": "Zibai",
+    "icon": "/AvatarIcon/UI_AvatarIcon_Zibai.webp"
+  },
+  {
+    "zh": "哥伦比娅",
+    "en": "Columbina",
+    "icon": "/AvatarIcon/UI_AvatarIcon_Columbina.webp"
+  },
+  {
+    "zh": "杜林",
+    "en": "Durin",
+    "icon": "/AvatarIcon/UI_AvatarIcon_Durin.webp"
+  },
+  {
+    "zh": "奈芙尔",
+    "en": "Nefer",
+    "icon": "/AvatarIcon/UI_AvatarIcon_Nefer.webp"
+  },
+  {
+    "zh": "菲林斯",
+    "en": "Flins",
+    "icon": "/AvatarIcon/UI_AvatarIcon_Flins.webp"
+  },
+  {
+    "zh": "菈乌玛",
+    "en": "Lauma",
+    "icon": "/AvatarIcon/UI_AvatarIcon_Lauma.webp"
+  },
+  {
+    "zh": "伊涅芙",
+    "en": "Ineffa",
+    "icon": "/AvatarIcon/UI_AvatarIcon_Ineffa.webp"
+  },
+  {
+    "zh": "丝柯克",
+    "en": "SkirkNew",
+    "icon": "/AvatarIcon/UI_AvatarIcon_SkirkNew.webp"
+  },
+  {
+    "zh": "爱可菲",
+    "en": "Escoffier",
+    "icon": "/AvatarIcon/UI_AvatarIcon_Escoffier.webp"
+  },
+  {
+    "zh": "瓦蕾莎",
+    "en": "Varesa",
+    "icon": "/AvatarIcon/UI_AvatarIcon_Varesa.webp"
+  },
+  {
+    "zh": "基尼奇",
+    "en": "Kinich",
+    "icon": "/AvatarIcon/UI_AvatarIcon_Kinich.webp"
+  },
+  {
+    "zh": "玛拉妮",
+    "en": "Mualani",
+    "icon": "/AvatarIcon/UI_AvatarIcon_Mualani.webp"
+  },
+  {
+    "zh": "艾梅莉埃",
+    "en": "Emilie",
+    "icon": "/AvatarIcon/UI_AvatarIcon_Emilie.webp"
+  },
+  {
+    "zh": "希格雯",
+    "en": "Sigewinne",
+    "icon": "/AvatarIcon/UI_AvatarIcon_Sigewinne.webp"
+  },
+  {
+    "zh": "克洛琳德",
+    "en": "Clorinde",
+    "icon": "/AvatarIcon/UI_AvatarIcon_Clorinde.webp"
+  },
+  {
+    "zh": "阿蕾奇诺",
+    "en": "Arlecchino",
+    "icon": "/AvatarIcon/UI_AvatarIcon_Arlecchino.webp"
+  },
+  {
+    "zh": "千织",
+    "en": "Chiori",
+    "icon": "/AvatarIcon/UI_AvatarIcon_Chiori.webp"
+  },
+  {
+    "zh": "闲云",
+    "en": "Liuyun",
+    "icon": "/AvatarIcon/UI_AvatarIcon_Liuyun.webp"
+  },
+  {
+    "zh": "娜维娅",
+    "en": "Navia",
+    "icon": "/AvatarIcon/UI_AvatarIcon_Navia.webp"
+  },
+  {
+    "zh": "芙宁娜",
+    "en": "Furina",
+    "icon": "/AvatarIcon/UI_AvatarIcon_Furina.webp"
+  },
+  {
+    "zh": "莱欧斯利",
+    "en": "Wriothesley",
+    "icon": "/AvatarIcon/UI_AvatarIcon_Wriothesley.webp"
+  },
+  {
+    "zh": "那维莱特",
+    "en": "Neuvillette",
+    "icon": "/AvatarIcon/UI_AvatarIcon_Neuvillette.webp"
+  },
+  {
+    "zh": "林尼",
+    "en": "Liney",
+    "icon": "/AvatarIcon/UI_AvatarIcon_Liney.webp"
+  },
+  {
+    "zh": "白术",
+    "en": "Baizhuer",
+    "icon": "/AvatarIcon/UI_AvatarIcon_Baizhuer.webp"
+  },
+  {
+    "zh": "艾尔海森",
+    "en": "Alhatham",
+    "icon": "/AvatarIcon/UI_AvatarIcon_Alhatham.webp"
+  },
+  {
+    "zh": "流浪者",
+    "en": "Wanderer",
+    "icon": "/AvatarIcon/UI_AvatarIcon_Wanderer.webp"
+  },
+  {
+    "zh": "纳西妲",
+    "en": "Nahida",
+    "icon": "/AvatarIcon/UI_AvatarIcon_Nahida.webp"
+  },
+  {
+    "zh": "妮露",
+    "en": "Nilou",
+    "icon": "/AvatarIcon/UI_AvatarIcon_Nilou.webp"
+  },
+  {
+    "zh": "赛诺",
+    "en": "Cyno",
+    "icon": "/AvatarIcon/UI_AvatarIcon_Cyno.webp"
+  },
+  {
+    "zh": "夜兰",
+    "en": "Yelan",
+    "icon": "/AvatarIcon/UI_AvatarIcon_Yelan.webp"
+  },
+  {
+    "zh": "神里绫人",
+    "en": "Ayato",
+    "icon": "/AvatarIcon/UI_AvatarIcon_Ayato.webp"
+  },
+  {
+    "zh": "八重神子", "en": "Yae", "icon": "/AvatarIcon/UI_AvatarIcon_Yae.webp"
+  },
+  {
+    "zh": "申鹤",
+    "en": "Shenhe",
+    "icon": "/AvatarIcon/UI_AvatarIcon_Shenhe.webp"
+  },
+  {
+    "zh": "荒泷一斗",
+    "en": "Itto", "icon": "/AvatarIcon/UI_AvatarIcon_Itto.webp"
+  },
+  {
+    "zh": "珊瑚宫心海",
+    "en": "Kokomi",
+    "icon": "/AvatarIcon/UI_AvatarIcon_Kokomi.webp"
+  },
+  {
+    "zh": "雷电将军",
+    "en": "Shougun",
+    "icon": "/AvatarIcon/UI_AvatarIcon_Shougun.webp"
+  },
+  {
+    "zh": "宵宫",
+    "en": "Yoimiya",
+    "icon": "/AvatarIcon/UI_AvatarIcon_Yoimiya.webp"
+  },
+  {
+    "zh": "神里绫华",
+    "en": "Ayaka",
+    "icon": "/AvatarIcon/UI_AvatarIcon_Ayaka.webp"
+  },
+  {
+    "zh": "枫原万叶",
+    "en": "Kazuha",
+    "icon": "/AvatarIcon/UI_AvatarIcon_Kazuha.webp"
+  },
+  {
+    "zh": "优菈",
+    "en": "Eula",
+    "icon": "/AvatarIcon/UI_AvatarIcon_Eula.webp"
+  },
+  {
+    "zh": "胡桃",
+    "en": "Hutao",
+    "icon": "/AvatarIcon/UI_AvatarIcon_Hutao.webp"
+  },
+  {
+    "zh": "魈",
+    "en": "Xiao",
+    "icon": "/AvatarIcon/UI_AvatarIcon_Xiao.webp"
+  },
+  {
+    "zh": "甘雨",
+    "en": "Ganyu",
+    "icon": "/AvatarIcon/UI_AvatarIcon_Ganyu.webp"
+  },
+  {
+    "zh": "阿贝多",
+    "en": "Albedo",
+    "icon": "/AvatarIcon/UI_AvatarIcon_Albedo.webp"
+  },
+  {
+    "zh": "钟离",
+    "en": "Zhongli",
+    "icon": "/AvatarIcon/UI_AvatarIcon_Zhongli.webp"
+  },
+  {
+    "zh": "达达利亚",
+    "en": "Tartaglia",
+    "icon": "/AvatarIcon/UI_AvatarIcon_Tartaglia.webp"
+  },
+  {
+    "zh": "可莉",
+    "en": "Klee",
+    "icon": "/AvatarIcon/UI_AvatarIcon_Klee.webp"
+  },
+  {
+    "zh": "温迪",
+    "en": "Venti",
+    "icon": "/AvatarIcon/UI_AvatarIcon_Venti.webp"
+  }
+]

@@ -10,8 +10,20 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { runSimulation, SimulationTargets } from "@/lib/simulator"
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
 
-const CHAR_LIST = ["茜特菈莉", "洛恩", "桑多涅", "尼可", "希诺宁", "恰斯卡", "玛薇卡", "莉奈娅", "法尔伽", "兹白", "哥伦比娅", "杜林", "奈芙尔", "菲林斯", "菈乌玛", "伊涅芙", "丝柯克", "爱可菲", "瓦蕾莎", "基尼奇", "玛拉妮", "艾梅莉埃", "希格雯", "克洛琳德", "阿蕾奇诺", "千织", "闲云", "娜维娅", "芙宁娜", "莱欧斯利", "那维莱特", "林尼", "白术", "艾尔海森", "流浪者", "纳西妲", "妮露", "赛诺", "提纳里", "夜兰", "神里绫人", "八重神子", "申鹤", "荒泷一斗", "珊瑚宫心海", "雷电将军", "宵宫", "神里绫华", "枫原万叶", "优菈", "胡桃", "魈", "甘雨", "阿贝多", "钟离", "达达利亚", "可莉", "温迪"];
-const WEAP_LIST = ["祭星者之望", "灾悔", "超越之匙", "尘光七谕", "岩峰巡歌", "星鹭赤羽", "焚曜千阳", "霜结的誓金枝", "狼的武功歌", "朏魄含光", "帷间夜曲", "黎明破晓之史", "黑蚀", "真语秘匣", "纺夜天镜", "血染荒城", "支离轮光", "苍耀", "香韵奏者", "溢彩心念", "寝正月初晴", "冲浪时光", "柔灯挽歌", "赦罪", "白雨心弦", "赤月之形", "有乐御藤切", "鹤鸣余音", "裁断", "静水流涌之辉", "金流监督", "万世流涌大典", "最初的大魔术", "碧落之珑", "苇海信标", "裁叶萃光", "图莱杜拉的回忆", "千夜浮梦", "圣显之钥", "赤沙之杖", "猎人之径", "若水", "波乱月白经津", "神乐之真意", "息灾", "赤角石溃杵", "冬极白星", "薙草之稻光", "不灭月华", "雾切之回光", "飞雷之振弦", "苍古自由之誓", "松籁响起之时", "终末嗟叹之诗", "护摩之杖", "磐岩结绿", "斫峰之刃", "贯虹之槊", "尘世之锁", "无工之剑", "和璞鸢"];
+import avatarData from "./avatar.json"
+
+// ==========================================
+// 🎨 单独拆出来的【茜特菈莉】名字颜色配置
+// ==========================================
+const CITLALI_TEXT_COLOR = "text-[#FFB7C5]"; 
+// 悬浮在纯粉色背景上时的文字颜色(防止粉底粉字看不清)
+const CITLALI_HOVER_TEXT_COLOR = "group-hover:text-white"; 
+
+const isCitlali = (name: string) => name === "茜特菈莉";
+const isPinkWeapon = (name: string) => name === "祭星者之望";
+
+const CHAR_LIST = avatarData.map(item => item.zh);
+const WEAP_LIST = ["祭星者之望", "灾悔", "超越之匙", "尘光七谕", "岩峰巡歌", "星鹭赤羽", "焚曜千阳", "霜结的誓金枝", "狼的武功歌", "朏魄含光", "帷间夜曲", "黎明破晓之史", "黑蚀", "真语秘匣", "纺夜天镜", "血染荒城", "支离轮光", "苍耀", "香韵奏者", "溢彩心念", "寝正月初晴", "冲浪时光", "柔灯挽歌", "赦罪", "白雨心弦", "赤月之形", "有乐御藤切", "鹤鸣余音", "裁断", "静水流涌之辉", "金流监督", "万世流涌大典", "最初的大魔术", "碧落之珑", "苇海信标", "裁叶萃光", "图莱杜拉的回忆", "千夜浮梦", "圣显之钥", "赤沙之杖", "猎人之径", "若水", "波乱月白经津", "神乐之真意", "息灾", "赤角石溃杵", "冬极白星", "薙草之稻光", "不灭月华", "雾切之回光", "飞雷之振弦", "苍古自由之誓", "松籁响起之时", "终末嗟叹之诗", "护摩之杖", "磐岩结绿", "斫峰之刃", "贯虹之槊", "尘世之锁", "无工之剑"];
 
 const BACKGROUND_VIDEOS = [
   "/backgrounds/1.mp4",
@@ -29,7 +41,7 @@ export default function GenshinSimulator() {
   const videoRef = useRef<HTMLVideoElement>(null);
 
   const [fates, setFates] = useState(0);
-  const [primos, setPrimos] = useState(0); // 👈 新增原石状态
+  const [primos, setPrimos] = useState(0);
   const [useStarglitter, setUseStarglitter] = useState(false);
   const [simCount, setSimCount] = useState(100000);
   const [loading, setLoading] = useState(false);
@@ -38,11 +50,10 @@ export default function GenshinSimulator() {
     charA: 0, charB: 0, weapA: 0, weapB: 0,
     charPity: 0, weapPity: 0, isCharGuaranteed: false
   });
-  const [names, setNames] = useState({ cA: "茜特菈莉", cB: "希诺宁", wA: "祭星者之望", wB: "岩峰巡歌" });
+  const [names, setNames] = useState({ cA: "茜特菈莉", cB: "玛薇卡", wA: "祭星者之望", wB: "焚曜千阳" });
   
   const [report, setReport] = useState<any>(null);
 
-  // 1. 自动探测新增的图片
   useEffect(() => {
     let isMounted = true;
 
@@ -91,7 +102,6 @@ export default function GenshinSimulator() {
 
     discoverImages();
 
-    // 2. 视频初始化防重逻辑
     let newVidIndex = 0;
     try {
       const lastVidIndex = localStorage.getItem('lastBgVidIndex');
@@ -107,7 +117,6 @@ export default function GenshinSimulator() {
     return () => { isMounted = false; };
   }, []);
 
-  // 滚动监听
   useEffect(() => {
     const handleScroll = () => {
       if (window.scrollY > window.innerHeight * 0.5) {
@@ -168,7 +177,6 @@ export default function GenshinSimulator() {
     
     const pulls = results.map(r => r.totalPulls).sort((a, b) => a - b);
     
-    // 👈 核心修复：将原石折算有效抽数代替原本的纯粉球
     const effectiveFates = fates + Math.floor(primos / 160);
     
     let successCount = 0;
@@ -228,8 +236,6 @@ export default function GenshinSimulator() {
     setLoading(false);
   };
 
-  const isPink = (name: string) => name === "茜特菈莉" || name === "祭星者之望";
-
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
@@ -243,7 +249,6 @@ export default function GenshinSimulator() {
     return null;
   };
 
-  // 👈 核心修复：显示返还的有效抽数
   const effectiveFates = fates + Math.floor(primos / 160);
   let actualReturnPullsDisplay: number | string = "(待计算)";
   let actualTotalPullsDisplay: number | string = "(待计算)";
@@ -257,14 +262,12 @@ export default function GenshinSimulator() {
   return (
     <>
       <div className="fixed inset-0 -z-10 bg-zinc-900 overflow-hidden">
-        {/* 背景图层 1 */}
         <div 
           className={`absolute inset-0 bg-cover bg-center bg-no-repeat transition-opacity duration-1000 ease-in-out ${
             (!showVideo && activeLayer === 1) ? 'opacity-100' : 'opacity-0'
           }`}
           style={{ backgroundImage: bgLayers.img1 ? `url(${bgLayers.img1})` : 'none' }}
         />
-        {/* 背景图层 2 */}
         <div 
           className={`absolute inset-0 bg-cover bg-center bg-no-repeat transition-opacity duration-1000 ease-in-out ${
             (!showVideo && activeLayer === 2) ? 'opacity-100' : 'opacity-0'
@@ -312,13 +315,12 @@ export default function GenshinSimulator() {
               <div className="flex flex-col">
                 <div className="flex flex-wrap items-center gap-6">
                   <div className="flex items-center gap-2">
-                    <Label className="font-bold text-zinc-700 dark:text-zinc-300">💰 已有粉球:</Label>
+                    <Label className="font-bold text-zinc-700 dark:text-zinc-300">已有粉球:</Label>
                     <Input type="number" value={fates} onChange={e => setFates(Number(e.target.value))} className="w-28 bg-white/50 dark:bg-black/50" />
                   </div>
                   
-                  {/* 👈 增加原石输入框 */}
                   <div className="flex items-center gap-2">
-                    <Label className="font-bold text-zinc-700 dark:text-zinc-300">💎 已有原石:</Label>
+                    <Label className="font-bold text-zinc-700 dark:text-zinc-300">已有原石:</Label>
                     <Input type="number" value={primos} onChange={e => setPrimos(Number(e.target.value))} className="w-28 bg-white/50 dark:bg-black/50" />
                   </div>
                   
@@ -340,7 +342,6 @@ export default function GenshinSimulator() {
                     <Input type="number" value={simCount} onChange={e => setSimCount(Number(e.target.value))} className="w-32 bg-white/50 dark:bg-black/50" />
                   </div>
                   
-                  {/* ====== 修改点 1：放大按钮尺寸，添加光环发光阴影和悬浮动画 ====== */}
                   <Button 
                     onClick={startSim} 
                     disabled={loading} 
@@ -354,7 +355,6 @@ export default function GenshinSimulator() {
                   <div className="overflow-hidden">
                     <div className="pt-4">
                       <div className="text-zinc-900 dark:text-zinc-100 text-sm font-medium bg-[#fff0f5]/50 dark:bg-[#2a1a20]/50 px-5 py-3 rounded-xl border border-[#FFB7C5]/30 w-max shadow-sm">
-                        {/* 👈 核心修复：显示转换后的总有效抽数 */}
                         <span className="text-[#FFB7C5] font-black text-lg pr-1">{effectiveFates}</span> 有效抽数 
                         <span className="ml-2 pr-1">预计返还</span> 
                         {report ? (
@@ -419,23 +419,80 @@ export default function GenshinSimulator() {
 
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 border-t border-zinc-200/50 pt-5">
                 {[
-                  { label: "角色A", key: "cA", targetKey: "charA", list: CHAR_LIST, max: 7 },
-                  { label: "角色B", key: "cB", targetKey: "charB", list: CHAR_LIST, max: 7 },
-                  { label: "武器A", key: "wA", targetKey: "weapA", list: WEAP_LIST, max: 5 },
-                  { label: "武器B", key: "wB", targetKey: "weapB", list: WEAP_LIST, max: 5 },
+                  { label: "角色A", key: "cA", targetKey: "charA", list: CHAR_LIST, max: 7, isChar: true },
+                  { label: "角色B", key: "cB", targetKey: "charB", list: CHAR_LIST, max: 7, isChar: true },
+                  { label: "武器A", key: "wA", targetKey: "weapA", list: WEAP_LIST, max: 5, isChar: false },
+                  { label: "武器B", key: "wB", targetKey: "weapB", list: WEAP_LIST, max: 5, isChar: false },
                 ].map((item) => (
                   <div key={item.key} className="flex flex-col gap-2">
                     <Label className="text-zinc-500">{item.label} 目标</Label>
                     <div className="flex items-center gap-2">
                       <Select value={(names as any)[item.key]} onValueChange={v => setNames({...names,[item.key]: v})}>
-                        <SelectTrigger className={`w-[130px] bg-white/50 dark:bg-black/50 ${isPink((names as any)[item.key]) ? 'text-[#FFB7C5] font-bold border-[#FFB7C5]' : ''}`}>
+                        
+                        {/* 🔥 此处进行了高度拉长和强行覆盖shadcn默认截断属性的重构，解决了框外图片挤压/名字溢出截断的问题 */}
+                        <SelectTrigger className={`
+                          bg-white/50 dark:bg-black/50 transition-all text-left
+                          ${item.isChar 
+                            ? 'w-[190px] h-[60px] [&>span]:!line-clamp-none [&>span]:flex [&>span]:items-center [&>span]:flex-1 [&>span]:min-w-0 [&_[data-avatar-container]]:!border-none [&_[data-avatar-container]]:!shadow-none [&_[data-avatar-container]]:!bg-transparent [&_[data-avatar-container]]:-ml-1' 
+                            : 'w-[160px] h-10'
+                          }
+                          ${isCitlali((names as any)[item.key]) && item.isChar ? `border-[#FFB7C5] ring-2 ring-[#FFB7C5]/30` : ''}
+                          ${isPinkWeapon((names as any)[item.key]) && !item.isChar ? 'text-[#FFB7C5] font-bold border-[#FFB7C5]' : ''}
+                        `}>
                           <SelectValue />
                         </SelectTrigger>
-                        <SelectContent>
-                          {item.list.map(name => (
-                            <SelectItem key={name} value={name} className={isPink(name) ? 'text-[#FFB7C5] font-bold' : ''}>{name}</SelectItem>
-                          ))}
+                        
+                        <SelectContent 
+                          className={item.isChar 
+                            ? "w-[85vw] max-w-[650px] max-h-[50vh] overflow-y-auto bg-white/30 dark:bg-black/30 backdrop-blur-xl border border-white/40 shadow-2xl rounded-2xl p-4" 
+                            : ""
+                          }
+                        >
+                          <div className={item.isChar ? "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3" : ""}>
+                            {item.list.map(name => {
+                              if (item.isChar) {
+                                const charInfo = avatarData.find(a => a.zh === name);
+                                const citlali = isCitlali(name);
+                                return (
+                                  <SelectItem 
+                                    key={name} 
+                                    value={name} 
+                                    className={`
+                                      group relative !p-[6px] rounded-xl cursor-pointer transition-all duration-300
+                                      [&>span.absolute]:hidden
+                                      ${citlali 
+                                        ? 'bg-[#FFB7C5]/30 hover:bg-[#FFB7C5] border-2 border-[#FFB7C5]' 
+                                        : 'bg-white/40 dark:bg-zinc-800/40 hover:bg-white dark:hover:bg-zinc-700 border border-white/50'}
+                                    `}
+                                  >
+                                    <div className="flex flex-row items-center justify-start w-full min-w-0 gap-2.5">
+                                      {/* 赋予 data-avatar-container 属性用于区分内外边框逻辑 */}
+                                      <div data-avatar-container className="w-[44px] h-[44px] rounded-md overflow-hidden flex-shrink-0 shadow-sm border border-zinc-300/80 dark:border-zinc-600/80 flex items-center justify-center bg-white/50 dark:bg-zinc-800/50 transition-all">
+                                        {charInfo?.icon ? (
+                                          // eslint-disable-next-line @next/next/no-img-element
+                                          <img src={charInfo.icon} alt={name} className="w-full h-full object-cover" />
+                                        ) : (
+                                          <div className="w-full h-full bg-zinc-300 dark:bg-zinc-700" />
+                                        )}
+                                      </div>
+                                      <span className={`text-[15px] text-left font-bold block truncate flex-1 min-w-0 ${citlali ? `${CITLALI_TEXT_COLOR} ${CITLALI_HOVER_TEXT_COLOR}` : 'text-zinc-800 dark:text-zinc-200'}`}>
+                                        {name}
+                                      </span>
+                                    </div>
+                                  </SelectItem>
+                                )
+                              } else {
+                                // ⚔️ 武器池保持原来的样子
+                                return (
+                                  <SelectItem key={name} value={name} className={isPinkWeapon(name) ? 'text-[#FFB7C5] font-bold' : ''}>
+                                    {name}
+                                  </SelectItem>
+                                )
+                              }
+                            })}
+                          </div>
                         </SelectContent>
+
                       </Select>
                       <Input type="number" min={0} max={item.max} 
                              value={(targets as any)[item.targetKey]} 
@@ -523,10 +580,10 @@ export default function GenshinSimulator() {
                     <p>平均粉球返还: {report.avgBallsBack} 抽 (约计)</p>
                     <p className="text-lg pt-3">实际净消耗期望: <br/><span className="text-[#FFB7C5] font-bold text-2xl">{report.netCost.toFixed(1)} 抽</span></p>
                     <p className="pt-2 text-zinc-600">
-                      目标: {targets.charA > 0 && <span className={isPink(names.cA) ? 'text-[#FFB7C5] font-bold' : ''}>{names.cA} </span>}
-                      {targets.charB > 0 && <span className={isPink(names.cB) ? 'text-[#FFB7C5] font-bold' : ''}>{names.cB} </span>}
-                      {targets.weapA > 0 && <span className={isPink(names.wA) ? 'text-[#FFB7C5] font-bold' : ''}>{names.wA} </span>}
-                      {targets.weapB > 0 && <span className={isPink(names.wB) ? 'text-[#FFB7C5] font-bold' : ''}>{names.wB} </span>}
+                      目标: {targets.charA > 0 && <span className={isCitlali(names.cA) ? `${CITLALI_TEXT_COLOR} font-bold` : ''}>{names.cA} </span>}
+                      {targets.charB > 0 && <span className={isCitlali(names.cB) ? `${CITLALI_TEXT_COLOR} font-bold` : ''}>{names.cB} </span>}
+                      {targets.weapA > 0 && <span className={isPinkWeapon(names.wA) ? 'text-[#FFB7C5] font-bold' : ''}>{names.wA} </span>}
+                      {targets.weapB > 0 && <span className={isPinkWeapon(names.wB) ? 'text-[#FFB7C5] font-bold' : ''}>{names.wB} </span>}
                     </p>
                   </CardContent>
                 </Card>
@@ -541,9 +598,14 @@ export default function GenshinSimulator() {
                     const parts = key.split('|').map(p => {
                       const[k, v] = p.split(':');
                       const realName = (names as any)[k];
+                      const isWeap = k.startsWith('w');
+                      const highlightClass = isWeap 
+                        ? (isPinkWeapon(realName) ? 'text-[#FFB7C5] font-bold' : '')
+                        : (isCitlali(realName) ? `${CITLALI_TEXT_COLOR} font-bold` : '');
+
                       return (
                         <span key={k}>
-                          <span className={isPink(realName) ? 'text-[#FFB7C5] font-bold' : ''}>{realName}</span>
+                          <span className={highlightClass}>{realName}</span>
                           <span>x{v}</span>
                         </span>
                       );
@@ -585,10 +647,8 @@ export default function GenshinSimulator() {
         </div>
       </div>
 
-      {/* ====== 修改点 2：删除了 div 最末尾冲突的 relative，增加高 z-index，让它彻底固定在右下角 ====== */}
       <div className="fixed bottom-6 right-6 z-[9999] flex flex-col items-end gap-3">
         
-        {/* 返回顶部 */}
         <div 
           className={`absolute bottom-[100%] right-0 mb-3 transition-all duration-500 ease-out origin-bottom ${
             showScrollTop ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-4 scale-95 pointer-events-none'
@@ -608,7 +668,6 @@ export default function GenshinSimulator() {
           </Button>
         </div>
 
-        {/* 下一张 */}
         {!showVideo && (
           <Button
             onClick={handleNextImage}
@@ -623,7 +682,6 @@ export default function GenshinSimulator() {
           </Button>
         )}
 
-        {/* 切换动态/照片 */}
         {isVideoSupported && bgVideo && (
           <Button
             onClick={() => setShowVideo(!showVideo)}
