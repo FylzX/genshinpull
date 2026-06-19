@@ -14,6 +14,7 @@ export interface SimResult {
 }
 
 export function runOneSimLogic(targets: SimulationTargets): SimResult {
+  // 一开始计数器为1
   let charCounter = 1;
   let charGuaranteed = targets.isCharGuaranteed || false; 
   let weaponGuaranteed = false; 
@@ -50,14 +51,28 @@ export function runOneSimLogic(targets: SimulationTargets): SimResult {
         const prob = 0.006 + Math.max(0, pGold - 73) * 0.06;
         if (Math.random() < prob) {
           let isUp = false;
-          if (charGuaranteed) { isUp = true; charGuaranteed = false; }
+          if (charGuaranteed) { 
+            isUp = true; 
+            charGuaranteed = false; 
+            // 大保底属于必定UP，不参与小保底计数器变更
+          }
           else {
-            if (charCounter === 3) { isUp = true; charCounter = 1; }
+            if (charCounter === 3) { 
+              // 若计数器为3则下一个小保底必定不歪，同时计数器重置为1
+              isUp = true; 
+              charCounter = 1; 
+            }
             else {
-              if (Math.random() < 0.5) { isUp = true; charCounter = Math.max(0, charCounter - 1); }
-              else {
-                if (Math.random() < 0.1) { isUp = true; charCounter = 1; } 
-                else { isUp = false; charGuaranteed = true; charCounter += 1; }
+              if (Math.random() < 0.5) { 
+                // 小保底没歪则计数器减1 (最低到0)
+                isUp = true; 
+                charCounter = Math.max(0, charCounter - 1); 
+              }
+              else { 
+                // 小保底歪了则计数器加一，大保底激活
+                isUp = false; 
+                charGuaranteed = true; 
+                charCounter += 1; 
               }
             }
           }
