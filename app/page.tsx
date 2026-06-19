@@ -297,7 +297,7 @@ export default function GenshinSimulator() {
           </div>
 
           <Card className="shadow-lg border-white/50 bg-white/85 dark:bg-zinc-950/85 backdrop-blur-md">
-            <CardHeader><CardTitle>🎯 设定目标与卡池状态</CardTitle></CardHeader>
+            <CardHeader><CardTitle>设定目标与卡池状态</CardTitle></CardHeader>
             <CardContent className="space-y-6">
               <div className="flex flex-col">
                 <div className="flex flex-wrap items-center gap-6">
@@ -334,7 +334,7 @@ export default function GenshinSimulator() {
                     disabled={loading} 
                     className="bg-[#FFB7C5] hover:bg-[#ff9eb2] text-zinc-900 font-extrabold text-lg h-14 px-8 rounded-xl transition-all shadow-[0_0_15px_rgba(255,183,197,0.6)] hover:shadow-[0_0_25px_rgba(255,183,197,0.9)] hover:-translate-y-0.5 ml-auto sm:ml-0 ring-4 ring-[#FFB7C5]/30"
                   >
-                    {loading ? "计算中..." : "✨ 开始计算"}
+                    {loading ? "计算中..." : "开始计算"}
                   </Button>
                 </div>
 
@@ -501,7 +501,7 @@ export default function GenshinSimulator() {
               <Card className="shadow-lg border-white/50 bg-white/85 dark:bg-zinc-950/85 backdrop-blur-md w-full">
                 <CardHeader>
                   <CardTitle className="flex justify-between items-end">
-                    <span>📊 抽卡消耗分布图</span>
+                    <span>抽卡消耗分布图</span>
                     <span className="text-sm font-normal text-zinc-500">
                       最欧: <b className="text-[#FFB7C5]">{report.pulls[0]}抽</b> ｜ 最非: <b className="text-orange-500">{report.pulls[report.pulls.length-1]}抽</b>
                     </span>
@@ -531,7 +531,7 @@ export default function GenshinSimulator() {
 
               <div className="grid md:grid-cols-2 gap-6">
                 <Card className="shadow-lg border-white/50 bg-white/85 dark:bg-zinc-950/85 backdrop-blur-md">
-                  <CardHeader><CardTitle>📈 累积概率分布</CardTitle></CardHeader>
+                  <CardHeader><CardTitle>累积概率分布</CardTitle></CardHeader>
                   <CardContent>
                     <Table className="bg-white/40 rounded-md overflow-hidden">
                       <TableHeader><TableRow><TableHead>消耗抽数</TableHead><TableHead>累积成功率</TableHead></TableRow></TableHeader>
@@ -554,7 +554,7 @@ export default function GenshinSimulator() {
                 </Card>
 
                 <Card className="shadow-lg border-white/50 bg-white/85 dark:bg-zinc-950/85 backdrop-blur-md">
-                  <CardHeader><CardTitle>📝 期望报告</CardTitle></CardHeader>
+                  <CardHeader><CardTitle>期望报告</CardTitle></CardHeader>
                   <CardContent className="bg-zinc-100/50 dark:bg-zinc-900/50 rounded-lg p-6 font-mono text-sm space-y-3 leading-relaxed border border-zinc-200/50">
                     <p>模拟平均总消耗: <span className="text-[#FFB7C5] font-bold text-base">{report.avgPulls.toFixed(1)} 抽</span></p>
                     <p>白板理论总期望: {report.theoryAvg.toFixed(1)} 抽 <span className="text-xs text-zinc-500">(0垫0保底对比参考)</span></p>
@@ -574,7 +574,7 @@ export default function GenshinSimulator() {
               </div>
 
               <Card className="shadow-lg border-white/50 bg-white/85 dark:bg-zinc-950/85 backdrop-blur-md mt-6">
-                <CardHeader><CardTitle>📦 详细收获组合分布</CardTitle></CardHeader>
+                <CardHeader><CardTitle>详细收获组合分布</CardTitle></CardHeader>
                 <CardContent className="bg-white/40 dark:bg-zinc-900/40 p-6 rounded-lg font-sans text-base space-y-2 border border-zinc-200/50">
                   {report.topCombos.map(([key, count]: [string, number], idx: number) => {
                     if (key === "none") return <div key={idx}>未获得任何目标物品 | <span className="text-zinc-500">{(count/simCount*100).toFixed(2)}%</span></div>;
