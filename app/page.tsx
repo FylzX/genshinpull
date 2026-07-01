@@ -11,7 +11,6 @@ import { runSimulation, SimulationTargets } from "@/lib/simulator"
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
 
 import avatarData from "./avatar.json"
-// 👇 引入刚刚建好的配置文件
 import bgData from "./background.json"
 
 // ==========================================
@@ -27,13 +26,53 @@ const isPinkWeapon = (name: string) => name === "祭星者之望";
 const CHAR_LIST = avatarData.map(item => item.zh);
 const WEAP_LIST = ["祭星者之望", "灾悔", "超越之匙", "尘光七谕", "岩峰巡歌", "星鹭赤羽", "焚曜千阳", "霜结的誓金枝", "狼的武功歌", "朏魄含光", "帷间夜曲", "黎明破晓之史", "黑蚀", "真语秘匣", "纺夜天镜", "血染荒城", "支离轮光", "苍耀", "香韵奏者", "溢彩心念", "寝正月初晴", "冲浪时光", "柔灯挽歌", "赦罪", "白雨心弦", "赤月之形", "有乐御藤切", "鹤鸣余音", "裁断", "静水流涌之辉", "金流监督", "万世流涌大典", "最初的大魔术", "碧落之珑", "苇海信标", "裁叶萃光", "图莱杜拉的回忆", "千夜浮梦", "圣显之钥", "赤沙之杖", "猎人之径", "若水", "波乱月白经津", "神乐之真意", "息灾", "赤角石溃杵", "冬极白星", "薙草之稻光", "不灭月华", "雾切之回光", "飞雷之振弦", "苍古自由之誓", "松籁响起之时", "终末嗟叹之诗", "护摩之杖", "磐岩结绿", "斫峰之刃", "贯虹之槊", "尘世之锁", "无工之剑"];
 
+
+// ==========================================
+// 🚀 新增：降维打击反击版！丝滑数字滚动动画组件
+// 比室友的速度更快，起步猛，刹车稳！
+// ==========================================
+function AnimatedPercentage({ value }: { value: number }) {
+  const [displayValue, setDisplayValue] = useState(0);
+
+  useEffect(() => {
+    let startTimestamp: number | null = null;
+    let animationFrameId: number;
+    // 👈 动画持续时间设定为 800ms (室友的龟速版是 1500ms)
+    const duration = 800; 
+
+    const step = (timestamp: number) => {
+      if (!startTimestamp) startTimestamp = timestamp;
+      const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+      
+      // 使用 easeOutQuart 缓动算法：1 - (1-x)^4
+      // 效果：数字一开始瞬间飙升，快到终点时丝滑减速停住
+      const easeProgress = 1 - Math.pow(1 - progress, 4); 
+      
+      setDisplayValue(value * easeProgress);
+
+      if (progress < 1) {
+        animationFrameId = requestAnimationFrame(step);
+      } else {
+        setDisplayValue(value);
+      }
+    };
+
+    setDisplayValue(0); // 每次计算重新归零起跑
+    animationFrameId = requestAnimationFrame(step);
+
+    return () => cancelAnimationFrame(animationFrameId);
+  }, [value]);
+
+  return <>{displayValue.toFixed(2)}%</>;
+}
+
+
 export default function GenshinSimulator() {
   const [bgLayers, setBgLayers] = useState({ img1: "", img2: "" });
   const [activeLayer, setActiveLayer] = useState<1 | 2>(1);
   const [validImages, setValidImages] = useState<string[]>([]);
   
   const [bgVideo, setBgVideo] = useState("");
-  // 👇 将默认值改为 false，这样网页刚加载出来就会默认显示图片
   const [showVideo, setShowVideo] = useState(false); 
   const [isVideoSupported, setIsVideoSupported] = useState(true); 
   const [showScrollTop, setShowScrollTop] = useState(false);
@@ -53,11 +92,9 @@ export default function GenshinSimulator() {
   
   const [report, setReport] = useState<any>(null);
 
-  // 👇 重新改写了初始化逻辑
   useEffect(() => {
     let isMounted = true;
 
-    // 1. 直接读取JSON中的图片列表
     const discovered = bgData.images || [];
     
     if (discovered.length > 0) {
@@ -72,17 +109,14 @@ export default function GenshinSimulator() {
         localStorage.setItem('lastBgImg', initialImg);
       } catch (e) {}
 
-      // 立即设置图片，确保一开始优先展示
       setBgLayers({ img1: initialImg, img2: "" });
 
-      // 偷偷在后台预加载剩下的图片，保证切换时丝滑
       discovered.forEach(src => {
         const img = new Image();
         img.src = src;
       });
     }
 
-    // 2. 延迟 800 毫秒后再加载视频，确保网络资源优先分配给上面的三张背景图
     setTimeout(() => {
       if (!isMounted) return;
       const videos = bgData.videos || [];
@@ -492,9 +526,12 @@ export default function GenshinSimulator() {
           {report && (
             <div className="space-y-6 animate-in fade-in zoom-in-95 duration-500">
               <div className="text-center py-6 bg-white/70 dark:bg-black/50 backdrop-blur-sm rounded-2xl shadow-sm mx-auto max-w-sm">
+                
+                {/* 👇 这里把原来的固定数字，换成了刚刚写的动画组件 */}
                 <h2 className={`text-6xl font-black tracking-tighter ${report.prob > 0.5 ? 'text-green-500' : 'text-orange-500'} drop-shadow-md`}>
-                  {(report.prob * 100).toFixed(2)}%
+                  <AnimatedPercentage value={report.prob * 100} />
                 </h2>
+
                 <p className="text-zinc-600 font-bold mt-2">预计成功率</p>
               </div>
 
