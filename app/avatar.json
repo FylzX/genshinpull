@@ -10,6 +10,11 @@
     "icon": "/AvatarIcon/UI_AvatarIcon_Lohen.webp"
   },
   {
+    "zh": "奥黛塔",
+    "en": "Odette",
+    "icon": "/AvatarIcon/UI_AvatarIcon_Odette.webp"
+  },
+  {
     "zh": "桑多涅",
     "en": "MarionetteNew",
     "icon": "/AvatarIcon/UI_AvatarIcon_MarionetteNew.webp"
