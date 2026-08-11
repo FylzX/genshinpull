@@ -357,7 +357,17 @@ export default function GenshinSimulator() {
 
                   <div className="flex items-center gap-2">
                     <Label className="text-zinc-600">模拟次数(10万即可):</Label>
-                    <Input type="number" value={simCount} onChange={e => setSimCount(Number(e.target.value))} className="w-32 bg-white/50 dark:bg-black/50" />
+                    <Input
+                      type="number"
+                      min={1}
+                      step={1}
+                      value={simCount}
+                      onChange={e => {
+                        const value = Number(e.target.value);
+                        if (Number.isFinite(value)) setSimCount(Math.max(1, Math.floor(value)));
+                      }}
+                      className="w-32 bg-white/50 dark:bg-black/50"
+                    />
                   </div>
                   
                   <Button 
