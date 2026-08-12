@@ -5,9 +5,14 @@
     "icon": "/AvatarIcon/UI_AvatarIcon_Citlali.webp"
   },
   {
-    "zh": "洛恩",
-    "en": "Lohen",
-    "icon": "/AvatarIcon/UI_AvatarIcon_Lohen.webp"
+    "zh": "薇斯纳",
+    "en": "Vesna",
+    "icon": "/AvatarIcon/UI_AvatarIcon_Vesna.webp"
+  },
+  {
+    "zh": "沃雅妮莎",
+    "en": "Vodyanitsa",
+    "icon": "/AvatarIcon/UI_AvatarIcon_Vodyanitsa.webp"
   },
   {
     "zh": "奥黛塔",
@@ -18,6 +23,11 @@
     "zh": "桑多涅",
     "en": "MarionetteNew",
     "icon": "/AvatarIcon/UI_AvatarIcon_MarionetteNew.webp"
+  },
+    {
+    "zh": "洛恩",
+    "en": "Lohen",
+    "icon": "/AvatarIcon/UI_AvatarIcon_Lohen.webp"
   },
   {
     "zh": "尼可",
