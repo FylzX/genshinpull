@@ -85,7 +85,7 @@ export default function GenshinSimulator() {
     charA: 0, charB: 0, weapA: 0, weapB: 0,
     charPity: 0, weapPity: 0, isCharGuaranteed: false
   });
-  const [names, setNames] = useState({ cA: "茜特菈莉", cB: "玛薇卡", wA: "祭星者之望", wB: "焚曜千阳" });
+  const [names, setNames] = useState({ cA: "茜特菈莉", cB: "奥黛塔", wA: "祭星者之望", wB: "白湖冬羽" });
   
   const [report, setReport] = useState<any>(null);
 
