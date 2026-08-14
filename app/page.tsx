@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react" 
+import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -373,7 +373,7 @@ export default function GenshinSimulator() {
                   <Button 
                     onClick={startSim} 
                     disabled={loading} 
-                    className="bg-[#FFB7C5] hover:bg-[#ff9eb2] text-zinc-900 font-extrabold text-lg h-14 px-8 rounded-xl transition-all shadow-[0_0_15px_rgba(255,183,197,0.6)] hover:shadow-[0_0_25px_rgba(255,183,197,0.9)] hover:-translate-y-0.5 ml-auto sm:ml-0 ring-4 ring-[#FFB7C5]/30"
+                    className="bg-[#FFB7C5] hover:bg-[#ff9eb2] text-zinc-900 font-extrabold text-lg h-14 px-8 rounded-xl transition-all shadow-[0_0_15px_rgba(255,183,197,0.6)] hover:shadow-[0_0_25px_rgba(255,183,197,0.9)] hover:-translate-y-0.5 ml-0 ring-4 ring-[#FFB7C5]/30"
                   >
                     {loading ? "计算中..." : "开始计算"}
                   </Button>
@@ -445,7 +445,7 @@ export default function GenshinSimulator() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 border-t border-zinc-200/50 pt-5">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 border-t border-zinc-200/50 pt-5">
                 {[
                   { label: "角色A", key: "cA", targetKey: "charA", list: CHAR_LIST, max: 7, isChar: true },
                   { label: "角色B", key: "cB", targetKey: "charB", list: CHAR_LIST, max: 7, isChar: true },
@@ -454,14 +454,14 @@ export default function GenshinSimulator() {
                 ].map((item) => (
                   <div key={item.key} className="flex flex-col gap-2">
                     <Label className="text-zinc-500">{item.label} 目标</Label>
-                    <div className="flex items-center gap-2">
+                    <div className="flex w-full items-center gap-2">
                       <Select value={(names as any)[item.key]} onValueChange={v => setNames({...names,[item.key]: v})}>
                         
                         <SelectTrigger className={`
                           bg-white/50 dark:bg-black/50 transition-all text-left
                           ${item.isChar 
-                            ? 'w-[190px] h-[60px] [&>span]:!line-clamp-none [&>span]:flex [&>span]:items-center [&>span]:flex-1 [&>span]:min-w-0 [&_[data-avatar-container]]:!border-none [&_[data-avatar-container]]:!shadow-none [&_[data-avatar-container]]:!bg-transparent [&_[data-avatar-container]]:-ml-1' 
-                            : 'w-[160px] h-10'
+                            ? 'w-full md:w-[190px] h-[60px] [&>span]:!line-clamp-none [&>span]:flex [&>span]:items-center [&>span]:flex-1 [&>span]:min-w-0 [&_[data-avatar-container]]:!border-none [&_[data-avatar-container]]:!shadow-none [&_[data-avatar-container]]:!bg-transparent [&_[data-avatar-container]]:-ml-1'
+                            : 'w-full md:w-[160px] h-10'
                           }
                           ${isCitlali((names as any)[item.key]) && item.isChar ? `border-[#FFB7C5] ring-2 ring-[#FFB7C5]/30` : ''}
                           ${isPinkWeapon((names as any)[item.key]) && !item.isChar ? 'text-[#FFB7C5] font-bold border-[#FFB7C5]' : ''}
@@ -471,7 +471,7 @@ export default function GenshinSimulator() {
                         
                         <SelectContent 
                           className={item.isChar 
-                            ? "w-[85vw] max-w-[650px] max-h-[50vh] overflow-y-auto bg-white/30 dark:bg-black/30 backdrop-blur-xl border border-white/40 shadow-2xl rounded-2xl p-4" 
+                            ? "w-[85vw] max-w-[650px] max-h-[50vh] overflow-y-auto overscroll-contain touch-pan-y bg-white/30 dark:bg-black/30 backdrop-blur-xl border border-white/40 shadow-2xl rounded-2xl p-4"
                             : ""
                           }
                         >

@@ -48,6 +48,19 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+@media (max-width: 767px) {
+  [data-slot="select-content"] {
+    touch-action: pan-y;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  [data-slot="select-viewport"] {
+    touch-action: pan-y;
+    overscroll-behavior: contain;
+  }
+}
+
 :root {
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
