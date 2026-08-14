@@ -12,6 +12,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGri
 
 import avatarData from "./avatar.json"
 import bgData from "./background.json"
+import characterElements from "./character-elements.json"
 
 // ==========================================
 // 🎨 单独拆出来的【茜特菈莉】名字颜色配置
@@ -24,6 +25,19 @@ const isCitlali = (name: string) => name === "茜特菈莉";
 const isPinkWeapon = (name: string) => name === "祭星者之望";
 
 const CHAR_LIST = avatarData.map(item => item.zh);
+const ELEMENT_BADGE_SIZE = "w-8 h-8";
+const ELEMENT_COLORS: Record<string, string> = {
+  pyro: "rgb(240, 80, 80)",
+  hydro: "rgb(60, 155, 240)",
+  anemo: "rgb(45, 235, 160)",
+  geo: "rgb(240, 185, 45)",
+  electro: "rgb(225, 75, 240)",
+  dendro: "rgb(75, 235, 55)",
+  cryo: "rgb(55, 220, 240)",
+};
+
+const getCharacterElement = (en: string) =>
+  (characterElements as Record<string, string>)[en];
 const WEAP_LIST = ["祭星者之望", "7.1测试单手剑", "7.1测试法器", "白湖冬羽", "灾悔", "超越之匙", "尘光七谕", "岩峰巡歌", "星鹭赤羽", "焚曜千阳", "霜结的誓金枝", "狼的武功歌", "朏魄含光", "帷间夜曲", "黎明破晓之史", "黑蚀", "真语秘匣", "纺夜天镜", "血染荒城", "支离轮光", "苍耀", "香韵奏者", "溢彩心念", "寝正月初晴", "冲浪时光", "柔灯挽歌", "赦罪", "白雨心弦", "赤月之形", "有乐御簾切", "鹤鸣余音", "裁断", "静水流涌之辉", "金流监督", "万世流涌大典", "最初的大魔术", "碧落之珑", "苇海信标", "裁叶萃光", "图莱杜拉的回忆", "千夜浮梦", "圣显之钥", "赤沙之杖", "猎人之径", "若水", "波乱月白经津", "神乐之真意", "息灾", "赤角石溃杵", "冬极白星", "薙草之稻光", "不灭月华", "雾切之回光", "飞雷之振弦", "苍古自由之誓", "松籁响起之时", "终末嗟叹之诗", "护摩之杖", "磐岩结绿", "斫峰之刃", "贯虹之槊", "尘世之锁", "无工之剑"];
 
 
@@ -185,6 +199,12 @@ export default function GenshinSimulator() {
   const startSim = async () => {
     if (names.cA === names.cB && targets.charB > 0) {
       alert("校验失败: 角色A与角色B不能重复选择");
+      return;
+    }
+
+    const totalTargets = targets.charA + targets.charB + targets.weapA + targets.weapB;
+    if (totalTargets === 0) {
+      setReport({ empty: true });
       return;
     }
 
@@ -445,7 +465,7 @@ export default function GenshinSimulator() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 border-t border-zinc-200/50 pt-5">
+              <div className="grid grid-cols-1 justify-start gap-y-2 border-t border-zinc-200/50 pt-5 md:grid-cols-2 lg:grid-cols-[max-content_max-content] lg:gap-x-6">
                 {[
                   { label: "角色A", key: "cA", targetKey: "charA", list: CHAR_LIST, max: 7, isChar: true },
                   { label: "角色B", key: "cB", targetKey: "charB", list: CHAR_LIST, max: 7, isChar: true },
@@ -459,10 +479,9 @@ export default function GenshinSimulator() {
                         
                         <SelectTrigger className={`
                           bg-white/50 dark:bg-black/50 transition-all text-left
-                          ${item.isChar 
-                            ? 'w-full md:w-[190px] h-[60px] [&>span]:!line-clamp-none [&>span]:flex [&>span]:items-center [&>span]:flex-1 [&>span]:min-w-0 [&_[data-avatar-container]]:!border-none [&_[data-avatar-container]]:!shadow-none [&_[data-avatar-container]]:!bg-transparent [&_[data-avatar-container]]:-ml-1'
-                            : 'w-full md:w-[160px] h-10'
-                          }
+                          ${item.isChar
+                            ? '!h-[60px] w-full md:!w-[210px] rounded-xl [&>span]:!line-clamp-none [&>span]:flex [&>span]:items-center [&>span]:flex-1 [&>span]:min-w-0'
+                            : 'h-10 w-full md:w-[160px]'}
                           ${isCitlali((names as any)[item.key]) && item.isChar ? `border-[#FFB7C5] ring-2 ring-[#FFB7C5]/30` : ''}
                           ${isPinkWeapon((names as any)[item.key]) && !item.isChar ? 'text-[#FFB7C5] font-bold border-[#FFB7C5]' : ''}
                         `}>
@@ -471,7 +490,7 @@ export default function GenshinSimulator() {
                         
                         <SelectContent 
                           className={item.isChar 
-                            ? "w-[85vw] max-w-[650px] max-h-[50vh] overflow-y-auto overscroll-contain touch-pan-y bg-white/30 dark:bg-black/30 backdrop-blur-xl border border-white/40 shadow-2xl rounded-2xl p-4"
+                            ? "w-[92vw] max-w-[820px] max-h-[50vh] overflow-y-auto overscroll-contain touch-pan-y bg-white/30 dark:bg-black/30 backdrop-blur-xl border border-white/40 shadow-2xl rounded-2xl p-4"
                             : ""
                           }
                         >
@@ -479,20 +498,22 @@ export default function GenshinSimulator() {
                             {item.list.map(name => {
                               if (item.isChar) {
                                 const charInfo = avatarData.find(a => a.zh === name);
+                                const element = charInfo?.en ? getCharacterElement(charInfo.en) : undefined;
+                                const elementColor = element ? ELEMENT_COLORS[element] : undefined;
                                 const citlali = isCitlali(name);
                                 return (
                                   <SelectItem 
                                     key={name} 
                                     value={name} 
                                     className={`
-                                      group relative !p-[6px] rounded-xl cursor-pointer transition-all duration-300
+                                      group relative !p-[6px] rounded-xl cursor-pointer transition-all duration-300 [&>span:last-child]:w-full
                                       [&>span.absolute]:hidden
                                       ${citlali 
                                         ? 'bg-[#FFB7C5]/30 hover:bg-[#FFB7C5] border-2 border-[#FFB7C5]' 
                                         : 'bg-white/40 dark:bg-zinc-800/40 hover:bg-white dark:hover:bg-zinc-700 border border-white/50'}
                                     `}
                                   >
-                                    <div className="flex flex-row items-center justify-start w-full min-w-0 gap-2.5">
+                                    <div className="flex w-full min-w-0 items-center gap-3 overflow-hidden pr-1">
                                       <div data-avatar-container className="w-[44px] h-[44px] rounded-md overflow-hidden flex-shrink-0 shadow-sm border border-zinc-300/80 dark:border-zinc-600/80 flex items-center justify-center bg-white/50 dark:bg-zinc-800/50 transition-all">
                                         {charInfo?.icon ? (
                                           // eslint-disable-next-line @next/next/no-img-element
@@ -501,9 +522,27 @@ export default function GenshinSimulator() {
                                           <div className="w-full h-full bg-zinc-300 dark:bg-zinc-700" />
                                         )}
                                       </div>
-                                      <span className={`text-[15px] text-left font-bold block truncate flex-1 min-w-0 ${citlali ? `${CITLALI_TEXT_COLOR} ${CITLALI_HOVER_TEXT_COLOR}` : 'text-zinc-800 dark:text-zinc-200'}`}>
+                                      <span className={`text-[15px] text-left font-bold block whitespace-nowrap flex-1 min-w-0 ${citlali ? `${CITLALI_TEXT_COLOR} ${CITLALI_HOVER_TEXT_COLOR}` : 'text-zinc-800 dark:text-zinc-200'}`}>
                                         {name}
                                       </span>
+                                      {element && (
+                                        <span
+                                          data-element-badge
+                                          className={`${ELEMENT_BADGE_SIZE} relative ml-auto flex-shrink-0 overflow-hidden rounded-md border-2 border-transparent bg-transparent`}
+                                        >
+                                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                                          <img
+                                            src={`/elements/${element}.webp`}
+                                            alt=""
+                                            aria-hidden="true"
+                                            className={`absolute ${element === "cryo" ? "left-[calc(50%+1.2px)]" : "left-[calc(50%+1.3px)]"} top-1/2 object-contain brightness-0 ${element === "dendro" ? "h-[28px] w-[28px]" : element === "cryo" ? "h-[26px] w-[26px]" : "h-[25px] w-[25px]"}`}
+                                            style={elementColor ? {
+                                              filter: `brightness(0) drop-shadow(${elementColor} 0 -32px 0)`,
+                                              transform: "translate(-50%, calc(-50% + 32px))",
+                                            } : undefined}
+                                          />
+                                        </span>
+                                      )}
                                     </div>
                                   </SelectItem>
                                 )
@@ -522,7 +561,9 @@ export default function GenshinSimulator() {
                       <Input type="number" min={0} max={item.max} 
                              value={(targets as any)[item.targetKey]} 
                              onChange={e => setTargets({...targets,[item.targetKey]: Number(e.target.value)})} 
-                             className="w-16 bg-white/50 dark:bg-black/50" />
+                             className={item.isChar
+                               ? "!h-[60px] !w-[60px] rounded-xl bg-white/50 text-center text-lg font-semibold dark:bg-black/50"
+                               : "w-16 bg-white/50 dark:bg-black/50"} />
                     </div>
                   </div>
                 ))}
@@ -530,7 +571,16 @@ export default function GenshinSimulator() {
             </CardContent>
           </Card>
 
-          {report && (
+          {report?.empty ? (
+            <div className="space-y-6 animate-in fade-in zoom-in-95 duration-500">
+              <div className="text-center py-6 bg-white/70 dark:bg-black/50 backdrop-blur-sm rounded-2xl shadow-sm mx-auto max-w-xl">
+                <h2 className="text-2xl font-black text-orange-500 drop-shadow-md">
+                  怎么, 谁都不想抽?<br />奶奶我可没时间陪你在这里浪费, 哼!
+                </h2>
+                <p className="text-zinc-600 font-bold mt-2">预计成功率</p>
+              </div>
+            </div>
+          ) : report && (
             <div className="space-y-6 animate-in fade-in zoom-in-95 duration-500">
               <div className="text-center py-6 bg-white/70 dark:bg-black/50 backdrop-blur-sm rounded-2xl shadow-sm mx-auto max-w-sm">
                 
