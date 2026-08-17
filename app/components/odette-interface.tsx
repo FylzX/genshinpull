@@ -780,7 +780,7 @@ export function OdetteInterface({ theme, onBackgroundChange }: { theme: Simulato
                 谢谢支持。
               </p>
               <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
-                往下滑，是我的照片
+                下面是我的照片
               </p>
               <svg 
                 className="w-8 h-8 text-[#FFB7C5] animate-bounce mt-2" 
