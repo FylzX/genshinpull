@@ -1,0 +1,869 @@
+"use client"
+
+import { useState, useEffect, useRef } from "react"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { runSimulation } from "@/lib/simulator"
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
+
+import avatarData from "../avatar.json"
+import bgData from "../background.json"
+import characterElements from "../character-elements.json"
+import { SimulatorBackground } from "./simulator-background"
+import { SimulatorFloatingControls } from "./simulator-floating-controls"
+import { SimulatorHeader } from "./simulator-header"
+import { ODETTE_THEME } from "./odette-theme"
+import type { SimulatorTheme } from "./theme-types"
+import { useSimulatorState } from "./simulator-state"
+
+// ==========================================
+// 🎨 单独拆出来的【茜特菈莉】名字颜色配置
+// ==========================================
+const CITLALI_TEXT_COLOR = "text-[#FFB7C5]"; 
+// 悬浮在纯粉色背景上时的文字颜色(防止粉底粉字看不清)
+const CITLALI_HOVER_TEXT_COLOR = "group-hover:text-white"; 
+
+const isCitlali = (name: string) => name === "茜特菈莉";
+const isPinkWeapon = (name: string) => name === "祭星者之望";
+
+const CHAR_LIST = avatarData.map(item => item.zh);
+const ELEMENT_BADGE_SIZE = "w-8 h-8";
+const ELEMENT_COLORS: Record<string, string> = {
+  pyro: "rgb(240, 80, 80)",
+  hydro: "rgb(60, 155, 240)",
+  anemo: "rgb(45, 235, 160)",
+  geo: "rgb(240, 185, 45)",
+  electro: "rgb(225, 75, 240)",
+  dendro: "rgb(75, 235, 55)",
+  cryo: "rgb(55, 220, 240)",
+};
+
+const getCharacterElement = (en: string) =>
+  (characterElements as Record<string, string>)[en];
+const pickWeightedImage = (candidates: string[]) => {
+  if (candidates.length === 0) return "";
+  const weightedImage = "/backgrounds/bg6.webp";
+  if (!candidates.includes(weightedImage) || candidates.length === 1) {
+    return candidates[Math.floor(Math.random() * candidates.length)];
+  }
+  if (Math.random() < 0.45) return weightedImage;
+  const otherCandidates = candidates.filter(img => img !== weightedImage);
+  return otherCandidates[Math.floor(Math.random() * otherCandidates.length)];
+};
+const WEAP_LIST = ["祭星者之望", "蝶变", "漩流颂歌", "白湖冬羽", "灾悔", "超越之匙", "尘光七谕", "岩峰巡歌", "星鹭赤羽", "焚曜千阳", "霜结的誓金枝", "狼的武功歌", "朏魄含光", "帷间夜曲", "黎明破晓之史", "黑蚀", "真语秘匣", "纺夜天镜", "血染荒城", "支离轮光", "苍耀", "香韵奏者", "溢彩心念", "寝正月初晴", "冲浪时光", "柔灯挽歌", "赦罪", "白雨心弦", "赤月之形", "有乐御簾切", "鹤鸣余音", "裁断", "静水流涌之辉", "金流监督", "万世流涌大典", "最初的大魔术", "碧落之珑", "苇海信标", "裁叶萃光", "图莱杜拉的回忆", "千夜浮梦", "圣显之钥", "赤沙之杖", "猎人之径", "若水", "波乱月白经津", "神乐之真意", "息灾", "赤角石溃杵", "冬极白星", "薙草之稻光", "不灭月华", "雾切之回光", "飞雷之振弦", "苍古自由之誓", "松籁响起之时", "终末嗟叹之诗", "护摩之杖", "磐岩结绿", "斫峰之刃", "贯虹之槊", "尘世之锁", "无工之剑"];
+
+
+
+function AnimatedPercentage({ value }: { value: number }) {
+  const [displayValue, setDisplayValue] = useState(0);
+
+  useEffect(() => {
+    let startTimestamp: number | null = null;
+    let animationFrameId: number;
+    // 👈 动画持续时间设定为 800m
+    const duration = 800; 
+
+    const step = (timestamp: number) => {
+      if (!startTimestamp) startTimestamp = timestamp;
+      const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+      
+      // 使用 easeOutQuart 缓动算法：1 - (1-x)^4
+      // 效果：数字一开始瞬间飙升，快到终点时丝滑减速停住
+      const easeProgress = 1 - Math.pow(1 - progress, 4); 
+      
+      setDisplayValue(value * easeProgress);
+
+      if (progress < 1) {
+        animationFrameId = requestAnimationFrame(step);
+      } else {
+        setDisplayValue(value);
+      }
+    };
+
+    setDisplayValue(0); // 每次计算重新归零起跑
+    animationFrameId = requestAnimationFrame(step);
+
+    return () => cancelAnimationFrame(animationFrameId);
+  }, [value]);
+
+  return <>{displayValue.toFixed(2)}%</>;
+}
+
+
+export function OdetteInterface({ theme, onBackgroundChange }: { theme: SimulatorTheme; onBackgroundChange: (background: string) => void }) {
+  const [bgLayers, setBgLayers] = useState({ img1: "", img2: "" });
+  const [activeLayer, setActiveLayer] = useState<1 | 2>(1);
+  const [validImages, setValidImages] = useState<string[]>([]);
+  
+  const [bgVideo, setBgVideo] = useState("");
+  const [showVideo, setShowVideo] = useState(false); 
+  const [isVideoSupported, setIsVideoSupported] = useState(true); 
+  const [showScrollTop, setShowScrollTop] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  const {
+    fates, setFates, primos, setPrimos, useStarglitter, setUseStarglitter,
+    simCount, setSimCount, loading, setLoading, targets, setTargets,
+    names, setNames, report, setReport,
+  } = useSimulatorState();
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const discovered = bgData[theme].images || [];
+    const imagePool = discovered;
+
+    const getRecentImages = () => {
+      try {
+        const stored = JSON.parse(localStorage.getItem('recentBgImgs') || '[]');
+        return Array.isArray(stored) ? stored.filter((img): img is string => typeof img === 'string') : [];
+      } catch (e) {
+        return [];
+      }
+    };
+
+    const rememberImage = (img: string) => {
+      try {
+        const recent = [img, ...getRecentImages().filter(item => item !== img)].slice(0, 3);
+        localStorage.setItem('recentBgImgs', JSON.stringify(recent));
+      } catch (e) {}
+    };
+    
+    if (imagePool.length > 0) {
+      setValidImages(imagePool);
+      const recentImages = getRecentImages();
+      const candidates = imagePool.filter(img => !recentImages.includes(img));
+      const initialImg = pickWeightedImage(candidates.length > 0 ? candidates : imagePool);
+      rememberImage(initialImg);
+      onBackgroundChange(initialImg);
+
+      if (!bgLayers.img1 && !bgLayers.img2) {
+        setBgLayers({ img1: initialImg, img2: "" });
+        setActiveLayer(1);
+      } else if (activeLayer === 1) {
+        setBgLayers(prev => ({ ...prev, img2: initialImg }));
+        setActiveLayer(2);
+      } else {
+        setBgLayers(prev => ({ ...prev, img1: initialImg }));
+        setActiveLayer(1);
+      }
+
+      imagePool.forEach(src => {
+        const img = new Image();
+        img.src = src;
+      });
+    }
+
+    setTimeout(() => {
+      if (!isMounted) return;
+      const videos: string[] = [];
+      if (videos.length === 0) return;
+
+      let newVidIndex = 0;
+      try {
+        const lastVidIndex = localStorage.getItem('lastBgVidIndex');
+        const validVidIndices = videos.map((_, i) => i).filter(i => i.toString() !== lastVidIndex);
+        newVidIndex = validVidIndices.length > 0 
+          ? validVidIndices[Math.floor(Math.random() * validVidIndices.length)] 
+          : 0;
+        localStorage.setItem('lastBgVidIndex', newVidIndex.toString());
+      } catch (error) {}
+
+      setBgVideo(videos[newVidIndex]);
+    }, 800);
+
+    return () => { isMounted = false; };
+  }, [theme]);
+
+  useEffect(() => {
+    if (theme === "odette") {
+      setNames(prev => ({ ...prev, ...ODETTE_THEME.defaults }));
+    } else {
+      setNames(prev => ({ ...prev, cA: "茜特菈莉", cB: "奥黛塔", wA: "祭星者之望", wB: "白湖冬羽" }));
+    }
+  }, [theme]);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > window.innerHeight * 0.5) {
+        setShowScrollTop(true);
+      } else {
+        setShowScrollTop(false);
+      }
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  const handleNextImage = () => {
+    if (validImages.length <= 1) return; 
+    
+    const currentImg = activeLayer === 1 ? bgLayers.img1 : bgLayers.img2;
+    let recentImages: string[] = [];
+    try {
+      const stored = JSON.parse(localStorage.getItem('recentBgImgs') || '[]');
+      recentImages = Array.isArray(stored) ? stored.filter((img): img is string => typeof img === 'string') : [];
+    } catch (e) {}
+    const excludedImages = Array.from(new Set([currentImg, ...recentImages]));
+    let candidates = validImages.filter(img => !excludedImages.includes(img));
+    if (candidates.length === 0) {
+      candidates = validImages.filter(img => img !== currentImg);
+    }
+    const nextImg = pickWeightedImage(candidates);
+    onBackgroundChange(nextImg);
+    
+    try {
+      const recent = [nextImg, ...recentImages.filter(img => img !== nextImg)].slice(0, 3);
+      localStorage.setItem('recentBgImgs', JSON.stringify(recent));
+    } catch (e) {}
+
+    if (activeLayer === 1) {
+      setBgLayers(prev => ({ ...prev, img2: nextImg }));
+      setActiveLayer(2);
+    } else {
+      setBgLayers(prev => ({ ...prev, img1: nextImg }));
+      setActiveLayer(1);
+    }
+  };
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    if (showVideo && videoRef.current && bgVideo) {
+      const playPromise = videoRef.current.play();
+      if (playPromise !== undefined) {
+        playPromise.catch((error) => {
+          console.warn("浏览器阻止了视频自动播放，降级为图片背景", error);
+          setIsVideoSupported(false);
+          setShowVideo(false);
+        });
+      }
+    }
+  }, [showVideo, bgVideo]);
+
+  const startSim = async () => {
+    if (names.cA === names.cB && targets.charB > 0) {
+      alert("校验失败: 角色A与角色B不能重复选择");
+      return;
+    }
+
+    const totalTargets = targets.charA + targets.charB + targets.weapA + targets.weapB;
+    if (totalTargets === 0) {
+      setReport({ empty: true });
+      return;
+    }
+
+    setLoading(true);
+    await new Promise(resolve => setTimeout(resolve, 50)); 
+    
+    const results = await runSimulation(targets, simCount);
+    
+    const pulls = results.map(r => r.totalPulls).sort((a, b) => a - b);
+    
+    const effectiveFates = fates + Math.floor(primos / 160);
+    
+    let successCount = 0;
+    if (useStarglitter) {
+      successCount = results.filter(r => (r.totalPulls - Math.floor(r.stardust / 5)) <= effectiveFates).length;
+    } else {
+      successCount = pulls.filter(p => p <= effectiveFates).length;
+    }
+    const prob = successCount / Math.max(1, simCount);
+    
+    const avgPulls = pulls.reduce((a, b) => a + b, 0) / simCount;
+    const avgDust = results.reduce((a, b) => a + b.stardust, 0) / simCount;
+    const avgBallsBack = avgDust >= 5 ? Math.floor(avgDust / 5) : 0;
+    
+    const theoryAvg = (targets.charA + targets.charB) * 93.46 + (targets.weapA + targets.weapB) * 66.5;
+
+    const BINS_COUNT = 40; 
+    const minPull = pulls[0];
+    const maxPull = pulls[pulls.length - 1];
+    const binSize = Math.max(1, Math.ceil((maxPull - minPull + 1) / BINS_COUNT)); 
+
+    const histData = Array.from({length: BINS_COUNT}, (_, i) => {
+      const start = minPull + i * binSize;
+      return {
+        name: `${start}~${start + binSize - 1}抽`,
+        范围: `${start}抽 - ${start + binSize - 1}抽`,
+        发生次数: 0,
+      };
+    });
+
+    pulls.forEach(p => {
+      const idx = Math.min(Math.floor((p - minPull) / binSize), BINS_COUNT - 1);
+      histData[idx].发生次数++;
+    });
+
+    const trimmedHistData = histData.filter(d => d.发生次数 > 0 || Math.random() > 0);
+
+    const comboMap: Record<string, number> = {};
+    results.forEach(r => {
+      const parts = [];
+      if (r.inv.cA > 0) parts.push(`cA:${r.inv.cA}`);
+      if (r.inv.cB > 0) parts.push(`cB:${r.inv.cB}`);
+      if (r.inv.wA > 0) parts.push(`wA:${r.inv.wA}`);
+      if (r.inv.wB > 0) parts.push(`wB:${r.inv.wB}`);
+      const key = parts.length > 0 ? parts.join('|') : "none";
+      comboMap[key] = (comboMap[key] || 0) + 1;
+    });
+
+    const topCombos = Object.entries(comboMap)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 15);
+
+    setReport({ 
+      prob, pulls, avgPulls, avgDust, avgBallsBack, theoryAvg, 
+      netCost: avgPulls - avgDust / 5, topCombos, trimmedHistData 
+    });
+    setLoading(false);
+  };
+
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-white/95 dark:bg-zinc-900 border shadow-xl p-3 rounded-md">
+          <p className="font-bold text-zinc-700 dark:text-zinc-200">{payload[0].payload.范围}</p>
+          <p className="text-[#FFB7C5] font-black text-lg">落入人数: {payload[0].value.toLocaleString()} 次</p>
+          <p className="text-sm text-zinc-500">占比: {(payload[0].value / simCount * 100).toFixed(2)}%</p>
+        </div>
+      );
+    }
+    return null;
+  };
+
+  const effectiveFates = fates + Math.floor(primos / 160);
+  let actualReturnPullsDisplay: number | string = "(待计算)";
+  let actualTotalPullsDisplay: number | string = "(待计算)";
+  if (report && report.avgPulls > 0) {
+    const returnRate = report.avgBallsBack / report.avgPulls;
+    const actualReturn = Math.floor((effectiveFates * returnRate) / (1 - returnRate));
+    actualReturnPullsDisplay = actualReturn;
+    actualTotalPullsDisplay = effectiveFates + actualReturn;
+  }
+
+  const isFeaturedCharacter = (name: string) => theme === "odette" ? name === ODETTE_THEME.featuredCharacter : isCitlali(name);
+  const isFeaturedWeapon = (name: string) => theme === "odette" ? name === ODETTE_THEME.featuredWeapon : isPinkWeapon(name);
+  return (
+    <div className="theme-transition">
+      {false && <SimulatorBackground
+        img1={bgLayers.img1}
+        img2={bgLayers.img2}
+        activeLayer={activeLayer}
+        showVideo={showVideo}
+        bgVideo={bgVideo}
+        isVideoSupported={isVideoSupported}
+        videoRef={videoRef}
+        onVideoError={() => {
+          console.warn("瑙嗛鍔犺浇澶辫触锛岄檷绾т负鍥剧墖鑳屾櫙");
+          setIsVideoSupported(false);
+          setShowVideo(false);
+        }}
+      />}
+      {false && <div className="fixed inset-0 -z-10 bg-zinc-900 overflow-hidden">
+        <div 
+          className={`absolute inset-0 bg-cover bg-center bg-no-repeat transition-opacity duration-1000 ease-in-out ${
+            (!showVideo && activeLayer === 1) ? 'opacity-100' : 'opacity-0'
+          }`}
+          style={{ backgroundImage: bgLayers.img1 ? `url(${bgLayers.img1})` : 'none' }}
+        />
+        <div 
+          className={`absolute inset-0 bg-cover bg-center bg-no-repeat transition-opacity duration-1000 ease-in-out ${
+            (!showVideo && activeLayer === 2) ? 'opacity-100' : 'opacity-0'
+          }`}
+          style={{ backgroundImage: bgLayers.img2 ? `url(${bgLayers.img2})` : 'none' }}
+        />
+
+        {bgVideo && isVideoSupported && (
+          <video
+            ref={videoRef}
+            src={bgVideo}
+            autoPlay loop muted playsInline
+            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ease-in-out ${
+              showVideo ? 'opacity-100' : 'opacity-0'
+            }`}
+            onError={() => {
+              console.warn("视频加载失败，降级为图片背景");
+              setIsVideoSupported(false);
+              setShowVideo(false);
+            }}
+          />
+        )}
+      </div>}
+
+      <div className="min-h-screen p-4 md:p-8 relative">
+        <div className="max-w-6xl mx-auto space-y-6">
+          
+          <SimulatorHeader
+            title="原神抽卡概率计算器"
+            githubLabel="Github项目地址"
+            readmeLabel="[点这里]奥黛塔准备的使用说明"
+            readmeHref={theme === "odette" ? ODETTE_THEME.readmeHref : "/readme_citlali.html"}
+          />
+          {false && <div className="text-center mb-8 space-y-2 bg-white/70 dark:bg-black/50 backdrop-blur-sm p-4 rounded-2xl shadow-sm inline-block mx-auto flex flex-col items-center">
+            <h1 className="text-3xl font-bold tracking-tight">原神抽卡概率计算器</h1>
+            <div className="flex flex-col items-center gap-1">
+              <a href="https://github.com/FylzX/genshinpull" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-sm font-medium text-zinc-600 hover:text-[#FFB7C5] transition-colors duration-300">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                  <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
+                </svg> Github项目地址
+              </a>
+              <a href="/readme.html" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-sm font-medium text-zinc-600 hover:text-[#FFB7C5] transition-colors duration-300">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg> [点这里]奶奶给你准备的使用说明
+              </a>
+            </div>
+          </div>}
+
+          <Card className="shadow-lg border-white/50 bg-white/85 dark:bg-zinc-950/85 backdrop-blur-md">
+            <CardHeader><CardTitle>设定目标与卡池状态</CardTitle></CardHeader>
+            <CardContent className="space-y-6">
+              <div className="flex flex-col">
+                <div className="flex flex-wrap items-center gap-6">
+                  <div className="flex items-center gap-2">
+                    <Label className="font-bold text-zinc-700 dark:text-zinc-300">已有粉球:</Label>
+                    <Input type="number" value={fates} onChange={e => setFates(Number(e.target.value))} className="w-28 bg-white/50 dark:bg-black/50" />
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    <Label className="font-bold text-zinc-700 dark:text-zinc-300">已有原石:</Label>
+                    <Input type="number" value={primos} onChange={e => setPrimos(Number(e.target.value))} className="w-28 bg-white/50 dark:bg-black/50" />
+                  </div>
+                  
+                  <div className="flex items-center space-x-2 border-zinc-300 dark:border-zinc-700">
+                    <input 
+                      type="checkbox" 
+                      id={`${theme}-use-starglitter`} 
+                      checked={useStarglitter}
+                      onChange={(e) => setUseStarglitter(e.target.checked)}
+                      className="w-5 h-5 accent-[#FFB7C5] cursor-pointer rounded-sm border-zinc-300"
+                    />
+                    <Label htmlFor={`${theme}-use-starglitter`} className="cursor-pointer font-bold text-zinc-700 dark:text-zinc-300 select-none">
+                      算上返还星辉(近似)
+                    </Label>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <Label className="text-zinc-600">模拟次数(10万即可):</Label>
+                    <Input
+                      type="number"
+                      min={1}
+                      step={1}
+                      value={simCount}
+                      onChange={e => {
+                        const value = Number(e.target.value);
+                        if (Number.isFinite(value)) setSimCount(Math.max(1, Math.floor(value)));
+                      }}
+                      className="w-32 bg-white/50 dark:bg-black/50"
+                    />
+                  </div>
+                  
+                  <Button 
+                    onClick={startSim} 
+                    disabled={loading} 
+                    className="bg-[#FFB7C5] hover:bg-[#ff9eb2] text-zinc-900 font-extrabold text-lg h-14 px-8 rounded-xl transition-all shadow-[0_0_15px_rgba(255,183,197,0.6)] hover:shadow-[0_0_25px_rgba(255,183,197,0.9)] hover:-translate-y-0.5 ml-0 ring-4 ring-[#FFB7C5]/30"
+                  >
+                    {loading ? "计算中..." : "开始计算"}
+                  </Button>
+                </div>
+
+                <div className={`grid transition-[grid-template-rows] duration-500 ease-in-out ${useStarglitter ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
+                  <div className="overflow-hidden">
+                    <div className="pt-4">
+                      <div className="text-zinc-900 dark:text-zinc-100 text-sm font-medium bg-[#fff0f5]/50 dark:bg-[#2a1a20]/50 px-5 py-3 rounded-xl border border-[#FFB7C5]/30 w-max shadow-sm">
+                        <span className="text-[#FFB7C5] font-black text-lg pr-1">{effectiveFates}</span> 有效抽数 
+                        <span className="ml-2 pr-1">预计返还</span> 
+                        {report ? (
+                          <>
+                            <span className="text-[#FFB7C5] font-black text-lg px-1">{actualReturnPullsDisplay}</span> 抽
+                            <span className="ml-2 pr-1">共</span>
+                            <span className="text-[#FFB7C5] font-black text-lg px-1">{actualTotalPullsDisplay}</span> 抽
+                          </>
+                        ) : (
+                          <>
+                            <span className="text-[#FFB7C5] font-bold px-1">{actualReturnPullsDisplay}</span>
+                            <span className="ml-2 pr-1">共</span>
+                            <span className="text-[#FFB7C5] font-bold px-1">{actualTotalPullsDisplay}</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-6 p-4 rounded-xl bg-[#fff0f5]/50 dark:bg-[#2a1a20]/50 border border-[#FFB7C5]/30">
+                <div className="flex items-center gap-3">
+                  <Label className="font-semibold text-zinc-700 dark:text-zinc-300">角色池已垫:</Label>
+                  <div className="relative">
+                    <Input 
+                      type="number" min={0} max={89} 
+                      value={targets.charPity} 
+                      onChange={e => setTargets({...targets, charPity: Math.min(89, Math.max(0, Number(e.target.value)))})} 
+                      className="w-20 bg-white/70 dark:bg-black/70 pr-6 text-center" 
+                    />
+                    <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-zinc-400">抽</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <Label className="font-semibold text-zinc-700 dark:text-zinc-300">武器池已垫:</Label>
+                  <div className="relative">
+                    <Input 
+                      type="number" min={0} max={79} 
+                      value={targets.weapPity} 
+                      onChange={e => setTargets({...targets, weapPity: Math.min(79, Math.max(0, Number(e.target.value)))})} 
+                      className="w-20 bg-white/70 dark:bg-black/70 pr-6 text-center" 
+                    />
+                    <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-zinc-400">抽</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center space-x-2 pl-4 border-l border-[#FFB7C5]/40">
+                  <input 
+                    type="checkbox" 
+                    id={`${theme}-char-guaranteed`} 
+                    checked={targets.isCharGuaranteed}
+                    onChange={(e) => setTargets({...targets, isCharGuaranteed: e.target.checked})}
+                    className="w-5 h-5 accent-[#FFB7C5] cursor-pointer rounded-sm border-zinc-300"
+                  />
+                  <Label htmlFor={`${theme}-char-guaranteed`} className="cursor-pointer font-bold text-[#FFB7C5] select-none">
+                    下一个角色必定UP (大保底)
+                  </Label>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 justify-start gap-y-2 border-t border-zinc-200/50 pt-5 md:grid-cols-2 lg:grid-cols-[max-content_max-content] lg:gap-x-6">
+                {[
+                  { label: "角色A", key: "cA", targetKey: "charA", list: CHAR_LIST, max: 7, isChar: true },
+                  { label: "角色B", key: "cB", targetKey: "charB", list: CHAR_LIST, max: 7, isChar: true },
+                  { label: "武器A", key: "wA", targetKey: "weapA", list: WEAP_LIST, max: 5, isChar: false },
+                  { label: "武器B", key: "wB", targetKey: "weapB", list: WEAP_LIST, max: 5, isChar: false },
+                ].map((item) => (
+                  <div key={item.key} className="flex flex-col gap-2">
+                    <Label className="text-zinc-500">{item.label} 目标</Label>
+                    <div className="flex w-full items-center gap-2">
+                      <Select value={(names as any)[item.key]} onValueChange={v => setNames({...names,[item.key]: v})}>
+                        
+                        <SelectTrigger className={`
+                          bg-white/50 dark:bg-black/50 transition-all text-left
+                          ${item.isChar
+                            ? '!h-[60px] w-full md:!w-[210px] rounded-xl [&>span]:!line-clamp-none [&>span]:flex [&>span]:items-center [&>span]:flex-1 [&>span]:min-w-0'
+                            : 'h-10 w-full md:w-[160px]'}
+                          ${isFeaturedCharacter((names as any)[item.key]) && item.isChar ? `theme-featured-character border-[#FFB7C5] ring-2 ring-[#FFB7C5]/30` : ''}
+                          ${isFeaturedWeapon((names as any)[item.key]) && !item.isChar ? 'text-[#FFB7C5] font-bold border-[#FFB7C5]' : ''}
+                        `}>
+                          <SelectValue />
+                        </SelectTrigger>
+                        
+                        <SelectContent 
+                          className={item.isChar 
+                            ? "w-[92vw] max-w-[820px] max-h-[50vh] overflow-y-auto overscroll-contain touch-pan-y bg-white/30 dark:bg-black/30 backdrop-blur-xl border border-white/40 shadow-2xl rounded-2xl p-4"
+                            : ""
+                          }
+                        >
+                          <div className={item.isChar ? "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3" : ""}>
+                            {item.list.map(name => {
+                              if (item.isChar) {
+                                const charInfo = avatarData.find(a => a.zh === name);
+                                const element = charInfo?.en ? getCharacterElement(charInfo.en) : undefined;
+                                const elementColor = element ? ELEMENT_COLORS[element] : undefined;
+                                const citlali = isFeaturedCharacter(name);
+                                return (
+                                  <SelectItem 
+                                    key={name} 
+                                    value={name} 
+                                    className={`
+                                      group relative !p-[6px] rounded-xl cursor-pointer transition-all duration-300 [&>span:last-child]:w-full
+                                      [&>span.absolute]:hidden
+                                      ${citlali 
+                                        ? 'theme-featured-character bg-[#FFB7C5]/30 hover:bg-[#FFB7C5] border-2 border-[#FFB7C5]' 
+                                        : 'bg-white/40 dark:bg-zinc-800/40 hover:bg-white dark:hover:bg-zinc-700 border border-white/50'}
+                                    `}
+                                  >
+                                    <div className="flex w-full min-w-0 items-center gap-3 overflow-hidden pr-1">
+                                      <div data-avatar-container className="w-[44px] h-[44px] rounded-md overflow-hidden flex-shrink-0 shadow-sm border border-zinc-300/80 dark:border-zinc-600/80 flex items-center justify-center bg-white/50 dark:bg-zinc-800/50 transition-all">
+                                        {charInfo?.icon ? (
+                                          // eslint-disable-next-line @next/next/no-img-element
+                                          <img src={charInfo.icon} alt={name} className="w-full h-full object-cover" />
+                                        ) : (
+                                          <div className="w-full h-full bg-zinc-300 dark:bg-zinc-700" />
+                                        )}
+                                      </div>
+                                      <span className={`text-[15px] text-left font-bold block whitespace-nowrap flex-1 min-w-0 ${citlali ? `${CITLALI_TEXT_COLOR} ${CITLALI_HOVER_TEXT_COLOR}` : 'text-zinc-800 dark:text-zinc-200'}`}>
+                                        {name}
+                                      </span>
+                                      {element && (
+                                        <span
+                                          data-element-badge
+                                          className={`${ELEMENT_BADGE_SIZE} relative ml-auto flex-shrink-0 overflow-hidden rounded-md border-2 border-transparent bg-transparent`}
+                                        >
+                                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                                          <img
+                                            src={`/elements/${element}.webp`}
+                                            alt=""
+                                            aria-hidden="true"
+                                            className={`absolute ${element === "cryo" ? "left-[calc(50%+1.2px)]" : "left-[calc(50%+1.3px)]"} top-1/2 object-contain brightness-0 ${element === "dendro" ? "h-[28px] w-[28px]" : element === "cryo" ? "h-[26px] w-[26px]" : "h-[25px] w-[25px]"}`}
+                                            style={elementColor ? {
+                                              filter: `brightness(0) drop-shadow(${elementColor} 0 -32px 0)`,
+                                              transform: "translate(-50%, calc(-50% + 32px))",
+                                            } : undefined}
+                                          />
+                                        </span>
+                                      )}
+                                    </div>
+                                  </SelectItem>
+                                )
+                              } else {
+                                return (
+                                  <SelectItem key={name} value={name} className={isFeaturedWeapon(name) ? 'text-[#FFB7C5] font-bold bg-[#FFB7C5]/20' : ''}>
+                                    {name}
+                                  </SelectItem>
+                                )
+                              }
+                            })}
+                          </div>
+                        </SelectContent>
+
+                      </Select>
+                      <Input type="number" min={0} max={item.max} 
+                             value={(targets as any)[item.targetKey]} 
+                             onChange={e => setTargets({...targets,[item.targetKey]: Number(e.target.value)})} 
+                             className={item.isChar
+                               ? "!h-[60px] !w-[60px] rounded-xl bg-white/50 text-center text-lg font-semibold dark:bg-black/50"
+                               : "w-16 bg-white/50 dark:bg-black/50"} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          {report?.empty ? (
+            <div className="space-y-6 animate-in fade-in zoom-in-95 duration-500">
+              <div className="text-center py-6 bg-white/70 dark:bg-black/50 backdrop-blur-sm rounded-2xl shadow-sm mx-auto max-w-xl">
+                <h2 className="text-2xl font-black text-orange-500 drop-shadow-md">
+                  角色A与角色B目标均为0<br />:(
+                </h2>
+                <p className="text-zinc-600 font-bold mt-2">预计成功率</p>
+              </div>
+            </div>
+          ) : report && (
+            <div className="space-y-6 animate-in fade-in zoom-in-95 duration-500">
+              <div className="text-center py-6 bg-white/70 dark:bg-black/50 backdrop-blur-sm rounded-2xl shadow-sm mx-auto max-w-sm">
+                
+                {/* 👇 这里把原来的固定数字，换成了刚刚写的动画组件 */}
+                <h2 className={`text-6xl font-black tracking-tighter ${report.prob > 0.5 ? 'text-green-500' : 'text-orange-500'} drop-shadow-md`}>
+                  <AnimatedPercentage value={report.prob * 100} />
+                </h2>
+
+                <p className="text-zinc-600 font-bold mt-2">预计成功率</p>
+              </div>
+
+              <Card className="shadow-lg border-white/50 bg-white/85 dark:bg-zinc-950/85 backdrop-blur-md w-full">
+                <CardHeader>
+                  <CardTitle className="flex justify-between items-end">
+                    <span>抽卡消耗分布图</span>
+                    <span className="text-sm font-normal text-zinc-500">
+                      最欧: <b className="text-[#FFB7C5]">{report.pulls[0]}抽</b> ｜ 最非: <b className="text-orange-500">{report.pulls[report.pulls.length-1]}抽</b>
+                    </span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-[350px] w-full mt-4">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={report.trimmedHistData} margin={{ top: 5, right: 20, left: 0, bottom: 20 }}>
+                        <defs>
+                          <linearGradient id={`${theme}-clash`} x1="1" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#f1aec9" stopOpacity={0.95} />
+                            <stop offset="40%" stopColor="#fcccee" stopOpacity={0.95} />
+                            <stop offset="100%" stopColor="#92e7ef" stopOpacity={0.95} />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#cbd5e1" />
+                        <XAxis dataKey="name" tick={{fontSize: 12, fill: '#475569'}} angle={-35} textAnchor="end" />
+                        <YAxis tick={{fontSize: 12, fill: '#475569'}} />
+                        <Tooltip content={<CustomTooltip />} cursor={{fill: '#FFB7C5', opacity: 0.15}} />
+                        <Bar dataKey="发生次数" fill={`url(#${theme}-clash)`} radius={[4, 4, 0, 0]} isAnimationActive={true} animationDuration={1000} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <div className="grid md:grid-cols-2 gap-6">
+                <Card className="shadow-lg border-white/50 bg-white/85 dark:bg-zinc-950/85 backdrop-blur-md">
+                  <CardHeader><CardTitle>累积概率分布</CardTitle></CardHeader>
+                  <CardContent>
+                    <Table className="bg-white/40 rounded-md overflow-hidden">
+                      <TableHeader><TableRow><TableHead>消耗抽数</TableHead><TableHead>累积成功率</TableHead></TableRow></TableHeader>
+                      <TableBody>
+                        <TableRow className="bg-[#fff0f5]/80 font-bold text-[#FFB7C5]">
+                          <TableCell>{report.pulls[0]} 抽</TableCell><TableCell>天选之子记录</TableCell>
+                        </TableRow>
+                        {[0.1, 0.3, 0.5, 0.7, 0.9, 0.99].map(p => (
+                          <TableRow key={p}>
+                            <TableCell>{report.pulls[Math.max(0, Math.floor(report.pulls.length * p) - 1)]} 抽</TableCell>
+                            <TableCell>前 {p * 100}% 水平</TableCell>
+                          </TableRow>
+                        ))}
+                        <TableRow className="bg-[#fff0f5]/80 font-bold text-[#FFB7C5]">
+                          <TableCell>{report.pulls[report.pulls.length - 1]} 抽</TableCell><TableCell>最非保底记录</TableCell>
+                        </TableRow>
+                      </TableBody>
+                    </Table>
+                  </CardContent>
+                </Card>
+
+                <Card className="shadow-lg border-white/50 bg-white/85 dark:bg-zinc-950/85 backdrop-blur-md">
+                  <CardHeader><CardTitle>期望报告</CardTitle></CardHeader>
+                  <CardContent className="bg-zinc-100/50 dark:bg-zinc-900/50 rounded-lg p-6 font-mono text-sm space-y-3 leading-relaxed border border-zinc-200/50">
+                    <p>模拟平均总消耗: <span className="text-[#FFB7C5] font-bold text-base">{report.avgPulls.toFixed(1)} 抽</span></p>
+                    <p>白板理论总期望: {report.theoryAvg.toFixed(1)} 抽 <span className="text-xs text-zinc-500">(0垫0保底对比参考)</span></p>
+                    <p>每金平均成本: {(report.avgPulls / Math.max(1, (targets.charA+targets.charB+targets.weapA+targets.weapB))).toFixed(1)} 抽</p>
+                    <div className="h-px bg-zinc-300 dark:bg-zinc-700 my-4" />
+                    <p>平均星辉返还: {report.avgDust.toFixed(1)}</p>
+                    <p>平均粉球返还: {report.avgBallsBack} 抽 (约计)</p>
+                    <p className="text-lg pt-3">实际净消耗期望: <br/><span className="text-[#FFB7C5] font-bold text-2xl">{report.netCost.toFixed(1)} 抽</span></p>
+                    <p className="pt-2 text-zinc-600">
+                      目标: {targets.charA > 0 && <span className={isFeaturedCharacter(names.cA) ? `${CITLALI_TEXT_COLOR} font-bold` : ''}>{names.cA} </span>}
+                      {targets.charB > 0 && <span className={isFeaturedCharacter(names.cB) ? `${CITLALI_TEXT_COLOR} font-bold` : ''}>{names.cB} </span>}
+                      {targets.weapA > 0 && <span className={isFeaturedWeapon(names.wA) ? 'text-[#FFB7C5] font-bold' : ''}>{names.wA} </span>}
+                      {targets.weapB > 0 && <span className={isFeaturedWeapon(names.wB) ? 'text-[#FFB7C5] font-bold' : ''}>{names.wB} </span>}
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <Card className="shadow-lg border-white/50 bg-white/85 dark:bg-zinc-950/85 backdrop-blur-md mt-6">
+                <CardHeader><CardTitle>详细收获组合分布</CardTitle></CardHeader>
+                <CardContent className="bg-white/40 dark:bg-zinc-900/40 p-6 rounded-lg font-sans text-base space-y-2 border border-zinc-200/50">
+                  {report.topCombos.map(([key, count]: [string, number], idx: number) => {
+                    if (key === "none") return <div key={idx}>未获得任何目标物品 | <span className="text-zinc-500">{(count/simCount*100).toFixed(2)}%</span></div>;
+                    
+                    const parts = key.split('|').map(p => {
+                      const[k, v] = p.split(':');
+                      const realName = (names as any)[k];
+                      const isWeap = k.startsWith('w');
+                      const highlightClass = isWeap 
+                        ? (isFeaturedWeapon(realName) ? 'text-[#FFB7C5] font-bold' : '')
+                        : (isFeaturedCharacter(realName) ? `${CITLALI_TEXT_COLOR} font-bold` : '');
+
+                      return (
+                        <span key={k}>
+                          <span className={highlightClass}>{realName}</span>
+                          <span>x{v}</span>
+                        </span>
+                      );
+                    });
+
+                    return (
+                      <div key={idx} className="flex items-center gap-2">
+                        {(parts as React.ReactNode[]).reduce((prev, curr) => [prev, ', ', curr])}
+                        <span className="text-zinc-500 ml-2">|  {(count/simCount*100).toFixed(2)}%</span>
+                      </div>
+                    )
+                  })}
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          <Card className="shadow-lg border-white/50 bg-white/85 dark:bg-zinc-950/85 backdrop-blur-md mt-8">
+            <CardContent className="p-6 flex flex-col items-center justify-center space-y-2 text-center">
+              <p className="text-lg font-bold text-zinc-700 dark:text-zinc-200 tracking-wide">
+                谢谢支持。
+              </p>
+              <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
+                往下滑，是我的照片
+              </p>
+              <svg 
+                className="w-8 h-8 text-[#FFB7C5] animate-bounce mt-2" 
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+              </svg>
+            </CardContent>
+          </Card>
+
+          <div className="h-[100vh] w-full bg-transparent pointer-events-none" />
+
+        </div>
+      </div>
+
+      <SimulatorFloatingControls
+        showScrollTop={showScrollTop}
+        onScrollTop={scrollToTop}
+        onNextImage={handleNextImage}
+      />
+      {false && <div className="fixed bottom-6 right-6 z-[9999] flex flex-col items-end gap-3">
+        
+        <div 
+          className={`absolute bottom-[100%] right-0 mb-3 transition-all duration-500 ease-out origin-bottom ${
+            showScrollTop ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-4 scale-95 pointer-events-none'
+          }`}
+        >
+          <Button 
+            onClick={scrollToTop} 
+            className="h-10 px-4 rounded-xl bg-white/70 hover:bg-white/90 dark:bg-zinc-800/80 dark:hover:bg-zinc-700 backdrop-blur-md shadow-md border border-[#FFB7C5]/40 flex items-center justify-center gap-1.5 text-[#FFB7C5] font-bold group transition-all"
+          >
+            <svg 
+              className="w-4 h-4 animate-bounce group-hover:animate-none group-hover:-translate-y-0.5 transition-transform" 
+              fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
+            </svg>
+            返回顶部
+          </Button>
+        </div>
+
+        {!showVideo && (
+          <Button
+            onClick={handleNextImage}
+            variant="outline"
+            className="animate-in fade-in slide-in-from-bottom-2 duration-500 h-10 px-4 rounded-xl bg-white/60 hover:bg-white/80 dark:bg-black/60 dark:hover:bg-black/80 backdrop-blur-md border border-white/40 text-[#FFB7C5] shadow-md flex items-center justify-center gap-1.5 font-bold transition-all"
+          >
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+              <circle cx="12" cy="13" r="4"></circle>
+            </svg>
+            切换背景
+          </Button>
+        )}
+
+        {isVideoSupported && bgVideo && (
+          <Button
+            onClick={() => setShowVideo(!showVideo)}
+            variant="outline"
+            className="animate-in fade-in slide-in-from-bottom-5 duration-700 h-10 px-4 rounded-xl bg-white/40 hover:bg-white/60 dark:bg-black/40 dark:hover:bg-black/60 backdrop-blur-md border border-white/30 text-zinc-800 dark:text-zinc-200 shadow-md flex items-center justify-center gap-1.5 font-bold transition-all"
+          >
+            {showVideo ? (
+              <>
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                  <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                  <polyline points="21 15 16 10 5 21"></polyline>
+                </svg>
+                切换为照片
+              </>
+            ) : (
+              <>
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                </svg>
+                切换为动态背景
+              </>
+            )}
+          </Button>
+        )}
+      </div>}
+    </div>
+  )
+}

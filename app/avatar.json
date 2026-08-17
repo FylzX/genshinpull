@@ -1,10 +1,5 @@
 [
   {
-    "zh": "茜特菈莉",
-    "en": "Citlali",
-    "icon": "/AvatarIcon/UI_AvatarIcon_Citlali.webp"
-  },
-  {
     "zh": "薇斯纳",
     "en": "Vesna",
     "icon": "/AvatarIcon/UI_AvatarIcon_Vesna.webp"
@@ -33,21 +28,6 @@
     "zh": "尼可",
     "en": "Nicole",
     "icon": "/AvatarIcon/UI_AvatarIcon_Nicole.webp"
-  },
-  {
-    "zh": "希诺宁",
-    "en": "Xilonen",
-    "icon": "/AvatarIcon/UI_AvatarIcon_Xilonen.webp"
-  },
-  {
-    "zh": "恰斯卡",
-    "en": "Chasca",
-    "icon": "/AvatarIcon/UI_AvatarIcon_Chasca.webp"
-  },
-  {
-    "zh": "玛薇卡",
-    "en": "Mavuika",
-    "icon": "/AvatarIcon/UI_AvatarIcon_Mavuika.webp"
   },
   {
     "zh": "莉奈娅",
@@ -105,9 +85,29 @@
     "icon": "/AvatarIcon/UI_AvatarIcon_Escoffier.webp"
   },
   {
-    "zh": "瓦蕾莎",
+    "zh": "瓦雷莎",
     "en": "Varesa",
     "icon": "/AvatarIcon/UI_AvatarIcon_Varesa.webp"
+  },
+  {
+    "zh": "茜特菈莉",
+    "en": "Citlali",
+    "icon": "/AvatarIcon/UI_AvatarIcon_Citlali.webp"
+  },
+  {
+    "zh": "玛薇卡",
+    "en": "Mavuika",
+    "icon": "/AvatarIcon/UI_AvatarIcon_Mavuika.webp"
+  },
+  {
+    "zh": "恰斯卡",
+    "en": "Chasca",
+    "icon": "/AvatarIcon/UI_AvatarIcon_Chasca.webp"
+  },
+  {
+    "zh": "希诺宁",
+    "en": "Xilonen",
+    "icon": "/AvatarIcon/UI_AvatarIcon_Xilonen.webp"
   },
   {
     "zh": "基尼奇",
@@ -130,7 +130,7 @@
     "icon": "/AvatarIcon/UI_AvatarIcon_Sigewinne.webp"
   },
   {
-    "zh": "克洛琳德",
+    "zh": "克洛琳徳",
     "en": "Clorinde",
     "icon": "/AvatarIcon/UI_AvatarIcon_Clorinde.webp"
   },

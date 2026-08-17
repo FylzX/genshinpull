@@ -1,12 +1,21 @@
 {
-  "images": [
-    "/backgrounds/bg1.webp",
-    "/backgrounds/bg2.webp",
-    "/backgrounds/bg3.webp",
-    "/backgrounds/bg4.webp",
-    "/backgrounds/bg5.webp"
-  ],
-  "videos": [
-    "/backgrounds/1.mp4"
-  ]
+  "citlali": {
+    "images": [
+      "/backgrounds_citlali/bg1.webp",
+      "/backgrounds_citlali/bg2.webp",
+      "/backgrounds_citlali/bg3.webp",
+      "/backgrounds_citlali/bg4.webp",
+      "/backgrounds_citlali/bg5.webp"
+    ],
+    "videos": [
+      "/backgrounds_citlali/1.mp4"
+    ]
+  },
+  "odette": {
+    "images": [
+      "/backgrounds_odette/bg1.webp",
+      "/backgrounds_odette/bg2.webp"
+    ],
+    "videos": []
+  }
 }
