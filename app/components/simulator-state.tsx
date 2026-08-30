@@ -60,7 +60,8 @@ export function SimulatorStateProvider({ children }: { children: React.ReactNode
     }
 
     setLoading(true)
-    await new Promise(resolve => setTimeout(resolve, 50))
+    try {
+      await new Promise(resolve => setTimeout(resolve, 50))
     const results = await runSimulation(targets, simCount)
     const pulls = results.map(result => result.totalPulls).sort((a, b) => a - b)
 
@@ -70,7 +71,7 @@ export function SimulatorStateProvider({ children }: { children: React.ReactNode
     const prob = successCount / Math.max(1, simCount)
     const avgPulls = pulls.reduce((a, b) => a + b, 0) / simCount
     const avgDust = results.reduce((a, b) => a + b.stardust, 0) / simCount
-    const avgBallsBack = avgDust >= 5 ? Math.floor(avgDust / 5) : 0
+    const avgBallsBack = results.reduce((sum, result) => sum + Math.floor(result.stardust / 5), 0) / simCount
     const theoryAvg = (targets.charA + targets.charB) * 93.46 + (targets.weapA + targets.weapB) * 66.5
 
     const binsCount = 40
@@ -104,11 +105,13 @@ export function SimulatorStateProvider({ children }: { children: React.ReactNode
       avgDust,
       avgBallsBack,
       theoryAvg,
-      netCost: avgPulls - avgDust / 5,
+      netCost: avgPulls - avgBallsBack,
       topCombos: Object.entries(comboMap).sort((a, b) => b[1] - a[1]).slice(0, 15),
       trimmedHistData: histData,
     })
-    setLoading(false)
+    } finally {
+      setLoading(false)
+    }
   }
 
   const returnDisplays = useMemo(() => {

@@ -248,6 +248,11 @@ export function CitlaliInterface({ theme, onBackgroundChange }: { theme: Simulat
   }, [showVideo, bgVideo]);
 
   const startSim = async () => {
+    if (fates < 0 || primos < 0) {
+      setReport({ negative: true });
+      return;
+    }
+
     if (names.cA === names.cB && targets.charB > 0) {
       alert("校验失败: 角色A与角色B不能重复选择");
       return;
@@ -260,7 +265,8 @@ export function CitlaliInterface({ theme, onBackgroundChange }: { theme: Simulat
     }
 
     setLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 50)); 
+    try {
+      await new Promise(resolve => setTimeout(resolve, 50));
     
     const results = await runSimulation(targets, simCount);
     
@@ -278,7 +284,7 @@ export function CitlaliInterface({ theme, onBackgroundChange }: { theme: Simulat
     
     const avgPulls = pulls.reduce((a, b) => a + b, 0) / simCount;
     const avgDust = results.reduce((a, b) => a + b.stardust, 0) / simCount;
-    const avgBallsBack = avgDust >= 5 ? Math.floor(avgDust / 5) : 0;
+    const avgBallsBack = results.reduce((sum, result) => sum + Math.floor(result.stardust / 5), 0) / simCount;
     
     const theoryAvg = (targets.charA + targets.charB) * 93.46 + (targets.weapA + targets.weapB) * 66.5;
 
@@ -320,9 +326,11 @@ export function CitlaliInterface({ theme, onBackgroundChange }: { theme: Simulat
 
     setReport({ 
       prob, pulls, avgPulls, avgDust, avgBallsBack, theoryAvg, 
-      netCost: avgPulls - avgDust / 5, topCombos, trimmedHistData 
+      netCost: avgPulls - avgBallsBack, topCombos, trimmedHistData
     });
-    setLoading(false);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const CustomTooltip = ({ active, payload, label }: any) => {
@@ -540,10 +548,10 @@ export function CitlaliInterface({ theme, onBackgroundChange }: { theme: Simulat
 
               <div className="grid grid-cols-1 justify-start gap-y-2 border-t border-zinc-200/50 pt-5 md:grid-cols-2 lg:grid-cols-[max-content_max-content] lg:gap-x-6">
                 {[
-                  { label: "角色A", key: "cA", targetKey: "charA", list: CHAR_LIST, max: 7, isChar: true },
-                  { label: "角色B", key: "cB", targetKey: "charB", list: CHAR_LIST, max: 7, isChar: true },
-                  { label: "武器A", key: "wA", targetKey: "weapA", list: WEAP_LIST, max: 5, isChar: false },
-                  { label: "武器B", key: "wB", targetKey: "weapB", list: WEAP_LIST, max: 5, isChar: false },
+                  { label: "角色A", key: "cA", targetKey: "charA", list: CHAR_LIST, isChar: true },
+                  { label: "角色B", key: "cB", targetKey: "charB", list: CHAR_LIST, isChar: true },
+                  { label: "武器A", key: "wA", targetKey: "weapA", list: WEAP_LIST, isChar: false },
+                  { label: "武器B", key: "wB", targetKey: "weapB", list: WEAP_LIST, isChar: false },
                 ].map((item) => (
                   <div key={item.key} className="flex flex-col gap-2">
                     <Label className="text-zinc-500">{item.label} 目标</Label>
@@ -631,7 +639,7 @@ export function CitlaliInterface({ theme, onBackgroundChange }: { theme: Simulat
                         </SelectContent>
 
                       </Select>
-                      <Input type="number" min={0} max={item.max} 
+                      <Input type="number" min={0}
                              value={(targets as any)[item.targetKey]} 
                              onChange={e => setTargets({...targets,[item.targetKey]: Number(e.target.value)})} 
                              className={item.isChar
@@ -644,7 +652,16 @@ export function CitlaliInterface({ theme, onBackgroundChange }: { theme: Simulat
             </CardContent>
           </Card>
 
-          {report?.empty ? (
+          {report?.negative ? (
+            <div className="space-y-6 animate-in fade-in zoom-in-95 duration-500">
+              <div className="text-center py-6 bg-white/70 dark:bg-black/50 backdrop-blur-sm rounded-2xl shadow-sm mx-auto max-w-xl">
+                <h2 className="text-2xl font-black text-orange-500 drop-shadow-md">
+                  怎么,负债累累还想来抽卡?<br />奶奶我可没时间陪你在这里浪费, 哼!
+                </h2>
+                <p className="text-zinc-600 font-bold mt-2">预计成功率</p>
+              </div>
+            </div>
+          ) : report?.empty ? (
             <div className="space-y-6 animate-in fade-in zoom-in-95 duration-500">
               <div className="text-center py-6 bg-white/70 dark:bg-black/50 backdrop-blur-sm rounded-2xl shadow-sm mx-auto max-w-xl">
                 <h2 className="text-2xl font-black text-orange-500 drop-shadow-md">
