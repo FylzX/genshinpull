@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>这个计算器准吗?</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #fff;
+        }
+        h1 {
+            font-size: 2em;
+            margin-bottom: 20px;
+        }
+        h2 {
+            font-size: 1.5em;
+            margin-top: 30px;
+            margin-bottom: 15px;
+        }
+        p {
+            margin: 1em 0;
+        }
+        ol, ul {
+            padding-left: 20px;
+            margin: 1em 0;
+        }
+        li {
+            margin-bottom: 10px;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 1.5em 0;
+            font-size: 0.95em;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px 10px;
+            text-align: center;
+        }
+        th {
+            background-color: #FFF0F5;
+        }
+        tr:nth-child(even) td {
+            background-color: #fafafa;
+        }
+        blockquote {
+            margin: 1.5em 0;
+            padding: 10px 20px;
+            border-left: 4px solid #FFB6C1;
+            background-color: #FFF0F5;
+        }
+        a {
+            color: #0066cc;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        .bold { font-weight: bold; }
+        .color-dark { color: #FF1493; }
+        .color-mid { color: #FF69B4; }
+    </style>
+</head>
+<body>
+
+    <h1><span class="color-dark bold">这个计算器准吗?</span></h1>
+
+    <p>概率表格参照 B 站 @一棵平衡树 于 2024-12 发布的 <a href="https://www.bilibili.com/video/BV13XBiYZErT/" target="_blank" rel="noopener noreferrer">BV13XBiYZErT</a></p>
+
+    <h2><span class="color-mid bold">过程</span></h2>
+
+    <ol>
+        <li>选取 7 种抽取目标进行对比(N 命 = 抽 N+1 个 UP 角色, N 精 = 抽 N+1 把定轨 UP 武器，R0 = 不抽武器)</li>
+        <li>计算器设置：0 垫 0 保底、不勾选星辉返还、模拟次数 100000</li>
+        <li>将参照表中「达成 50% 概率所需抽数」直接作为有效抽数输入计算器，记录输出的成功率</li>
+        <li>逐抽增加有效抽数，记录计算器首次达到 ≥50% 时的抽数及对应成功率</li>
+    </ol>
+
+    <h2><span class="color-mid bold">测试结果</span></h2>
+
+    <table>
+        <thead>
+            <tr>
+                <th>抽取目标</th>
+                <th>参照表 50% 抽数</th>
+                <th>计算器在该抽数的成功率</th>
+                <th>计算器首次 ≥50% 抽数</th>
+                <th>对应成功率</th>
+                <th>抽数偏差</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr><td>C0R0</td><td>79</td><td>48.01%</td><td>80</td><td>51.00%</td><td>+1</td></tr>
+            <tr><td>C2R0</td><td>272</td><td>48.78%</td><td>275</td><td>50.02%</td><td>+3</td></tr>
+            <tr><td>C6R0</td><td>637</td><td>48.95%</td><td>639</td><td>50.30%</td><td>+2</td></tr>
+            <tr><td>C0R1</td><td>176</td><td>48.29%</td><td>179</td><td>50.01%</td><td>+3</td></tr>
+            <tr><td>C2R1</td><td>361</td><td>49.34%</td><td>363</td><td>50.15%</td><td>+2</td></tr>
+            <tr><td>C6R1</td><td>723</td><td>49.19%</td><td>725</td><td>50.25%</td><td>+2</td></tr>
+            <tr><td>C6R5</td><td>1069</td><td>49.29%</td><td>1072</td><td>50.13%</td><td>+3</td></tr>
+        </tbody>
+    </table>
+
+    <ul>
+        <li>7 组测试中，计算器的 50% 分位抽数与解析计算结果的偏差均在 1～3 抽以内，相对偏差最大 1.7%（C0R1：179 vs 176），目标越大相对偏差越小（C6R5 仅 0.28%）</li>
+        <li>在参照表的 50% 抽数处，计算器给出的成功率为 48.0%～49.3%，与 50% 的差距不超过 2 个百分点</li>
+        <li>计算器结果整体略偏保守（同抽数成功率略低、同概率需多 1～3 抽），偏差方向一致、幅度稳定，属于模型假设差异而非随机误差</li>
+        <li>10 万次蒙特卡洛模拟在 50% 附近的统计标准误约 ±0.16 个百分点，每次重新计算结果在 ±0.3 个百分点内波动属正常现象</li>
+    </ul>
+
+    <blockquote>
+        <span class="bold">所以计算器的误差在实际抽卡规划中可以忽略；如需更稳妥的估算，可在计算器结果基础上再预留 1~3 抽</span>
+    </blockquote>
+
+</body>
+</html>

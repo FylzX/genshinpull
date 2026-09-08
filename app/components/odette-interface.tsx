@@ -413,6 +413,7 @@ export function OdetteInterface({ theme, onBackgroundChange }: { theme: Simulato
             githubLabel="Github项目地址"
             readmeLabel="[点这里]奥黛塔准备的使用说明"
             readmeHref={theme === "odette" ? ODETTE_THEME.readmeHref : "/readme_citlali.html"}
+            probHref={theme === "odette" ? "/prob_odette.html" : "/prob_citlali.html"}
           />
           {false && <div className="text-center mb-8 space-y-2 bg-white/70 dark:bg-black/50 backdrop-blur-sm p-4 rounded-2xl shadow-sm inline-block mx-auto flex flex-col items-center">
             <h1 className="text-3xl font-bold tracking-tight">原神抽卡概率计算器</h1>
