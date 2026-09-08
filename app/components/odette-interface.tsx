@@ -21,14 +21,14 @@ import type { SimulatorTheme } from "./theme-types"
 import { useSimulatorState } from "./simulator-state"
 
 // ==========================================
-// 🎨 单独拆出来的【茜特菈莉】名字颜色配置
+// 🎨 单独拆出来的【奥黛塔】名字颜色配置
 // ==========================================
-const CITLALI_TEXT_COLOR = "text-[#FFB7C5]"; 
-// 悬浮在纯粉色背景上时的文字颜色(防止粉底粉字看不清)
-const CITLALI_HOVER_TEXT_COLOR = "group-hover:text-white"; 
+const ODETTE_TEXT_COLOR = "text-[#FFB7C5]";
+// 悬浮在主题强调色背景上时的文字颜色(防止背景与文字对比不足)
+const ODETTE_HOVER_TEXT_COLOR = "group-hover:text-white";
 
-const isCitlali = (name: string) => name === "茜特菈莉";
-const isPinkWeapon = (name: string) => name === "祭星者之望";
+const isOdette = (name: string) => name === ODETTE_THEME.featuredCharacter;
+const isOdetteWeapon = (name: string) => name === ODETTE_THEME.featuredWeapon;
 
 const CHAR_LIST = avatarData.map(item => item.zh);
 const ELEMENT_BADGE_SIZE = "w-8 h-8";
@@ -180,11 +180,7 @@ export function OdetteInterface({ theme, onBackgroundChange }: { theme: Simulato
   }, [theme]);
 
   useEffect(() => {
-    if (theme === "odette") {
-      setNames(prev => ({ ...prev, ...ODETTE_THEME.defaults }));
-    } else {
-      setNames(prev => ({ ...prev, cA: "茜特菈莉", cB: "奥黛塔", wA: "祭星者之望", wB: "白湖冬羽" }));
-    }
+    setNames(prev => ({ ...prev, ...ODETTE_THEME.defaults }));
   }, [theme]);
 
   useEffect(() => {
@@ -356,8 +352,8 @@ export function OdetteInterface({ theme, onBackgroundChange }: { theme: Simulato
     actualTotalPullsDisplay = effectiveFates + actualReturn;
   }
 
-  const isFeaturedCharacter = (name: string) => theme === "odette" ? name === ODETTE_THEME.featuredCharacter : isCitlali(name);
-  const isFeaturedWeapon = (name: string) => theme === "odette" ? name === ODETTE_THEME.featuredWeapon : isPinkWeapon(name);
+  const isFeaturedCharacter = isOdette;
+  const isFeaturedWeapon = isOdetteWeapon;
   return (
     <div className="theme-transition">
       {false && <SimulatorBackground
@@ -412,8 +408,8 @@ export function OdetteInterface({ theme, onBackgroundChange }: { theme: Simulato
             title="原神抽卡概率计算器"
             githubLabel="Github项目地址"
             readmeLabel="[点这里]奥黛塔准备的使用说明"
-            readmeHref={theme === "odette" ? ODETTE_THEME.readmeHref : "/readme_citlali.html"}
-            probHref={theme === "odette" ? "/prob_odette.html" : "/prob_citlali.html"}
+            readmeHref={ODETTE_THEME.readmeHref}
+            probHref="/prob_odette.html"
           />
           {false && <div className="text-center mb-8 space-y-2 bg-white/70 dark:bg-black/50 backdrop-blur-sm p-4 rounded-2xl shadow-sm inline-block mx-auto flex flex-col items-center">
             <h1 className="text-3xl font-bold tracking-tight">原神抽卡概率计算器</h1>
@@ -424,7 +420,7 @@ export function OdetteInterface({ theme, onBackgroundChange }: { theme: Simulato
                 </svg> Github项目地址
               </a>
               <a href="/readme.html" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-sm font-medium text-zinc-600 hover:text-[#FFB7C5] transition-colors duration-300">
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg> [点这里]奶奶给你准备的使用说明
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg> [点这里]奥黛塔给你准备的使用说明
               </a>
             </div>
           </div>}
@@ -582,7 +578,7 @@ export function OdetteInterface({ theme, onBackgroundChange }: { theme: Simulato
                                 const charInfo = avatarData.find(a => a.zh === name);
                                 const element = charInfo?.en ? getCharacterElement(charInfo.en) : undefined;
                                 const elementColor = element ? ELEMENT_COLORS[element] : undefined;
-                                const citlali = isFeaturedCharacter(name);
+                                const odette = isFeaturedCharacter(name);
                                 return (
                                   <SelectItem 
                                     key={name} 
@@ -590,7 +586,7 @@ export function OdetteInterface({ theme, onBackgroundChange }: { theme: Simulato
                                     className={`
                                       group relative !p-[6px] rounded-xl cursor-pointer transition-all duration-300 [&>span:last-child]:w-full
                                       [&>span.absolute]:hidden
-                                      ${citlali 
+                                      ${odette
                                         ? 'theme-featured-character bg-[#FFB7C5]/30 hover:bg-[#FFB7C5] border-2 border-[#FFB7C5]' 
                                         : 'bg-white/40 dark:bg-zinc-800/40 hover:bg-white dark:hover:bg-zinc-700 border border-white/50'}
                                     `}
@@ -604,7 +600,7 @@ export function OdetteInterface({ theme, onBackgroundChange }: { theme: Simulato
                                           <div className="w-full h-full bg-zinc-300 dark:bg-zinc-700" />
                                         )}
                                       </div>
-                                      <span className={`text-[15px] text-left font-bold block whitespace-nowrap flex-1 min-w-0 ${citlali ? `${CITLALI_TEXT_COLOR} ${CITLALI_HOVER_TEXT_COLOR}` : 'text-zinc-800 dark:text-zinc-200'}`}>
+                                      <span className={`text-[15px] text-left font-bold block whitespace-nowrap flex-1 min-w-0 ${odette ? `${ODETTE_TEXT_COLOR} ${ODETTE_HOVER_TEXT_COLOR}` : 'text-zinc-800 dark:text-zinc-200'}`}>
                                         {name}
                                       </span>
                                       {element && (
@@ -749,10 +745,10 @@ export function OdetteInterface({ theme, onBackgroundChange }: { theme: Simulato
                     <p>平均粉球返还: {report.avgBallsBack} 抽 (约计)</p>
                     <p className="text-lg pt-3">实际净消耗期望: <br/><span className="text-[#FFB7C5] font-bold text-2xl">{report.netCost.toFixed(1)} 抽</span></p>
                     <p className="pt-2 text-zinc-600">
-                      目标: {targets.charA > 0 && <span className={isFeaturedCharacter(names.cA) ? `${CITLALI_TEXT_COLOR} font-bold` : ''}>{names.cA} </span>}
-                      {targets.charB > 0 && <span className={isFeaturedCharacter(names.cB) ? `${CITLALI_TEXT_COLOR} font-bold` : ''}>{names.cB} </span>}
-                      {targets.weapA > 0 && <span className={isFeaturedWeapon(names.wA) ? 'text-[#FFB7C5] font-bold' : ''}>{names.wA} </span>}
-                      {targets.weapB > 0 && <span className={isFeaturedWeapon(names.wB) ? 'text-[#FFB7C5] font-bold' : ''}>{names.wB} </span>}
+                      目标: {targets.charA > 0 && <span className={isFeaturedCharacter(names.cA) ? `${ODETTE_TEXT_COLOR} font-bold` : ''}>{names.cA} </span>}
+                      {targets.charB > 0 && <span className={isFeaturedCharacter(names.cB) ? `${ODETTE_TEXT_COLOR} font-bold` : ''}>{names.cB} </span>}
+                      {targets.weapA > 0 && <span className={isFeaturedWeapon(names.wA) ? `${ODETTE_TEXT_COLOR} font-bold` : ''}>{names.wA} </span>}
+                      {targets.weapB > 0 && <span className={isFeaturedWeapon(names.wB) ? `${ODETTE_TEXT_COLOR} font-bold` : ''}>{names.wB} </span>}
                     </p>
                   </CardContent>
                 </Card>
@@ -770,7 +766,7 @@ export function OdetteInterface({ theme, onBackgroundChange }: { theme: Simulato
                       const isWeap = k.startsWith('w');
                       const highlightClass = isWeap 
                         ? (isFeaturedWeapon(realName) ? 'text-[#FFB7C5] font-bold' : '')
-                        : (isFeaturedCharacter(realName) ? `${CITLALI_TEXT_COLOR} font-bold` : '');
+                        : (isFeaturedCharacter(realName) ? `${ODETTE_TEXT_COLOR} font-bold` : '');
 
                       return (
                         <span key={k}>
