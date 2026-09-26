@@ -57,7 +57,7 @@ The chart itself has at most 40 bins. Its bar count does not grow with the numbe
 
 ## Verification and evidence
 
-Run the retained regression check with `node scripts/check-simulation.mjs`. It compares exact seeded results across both scheduling paths, empty and nonempty targets, pity and guarantee settings, and counts around 100 and 5,000. It also checks real event-loop yielding and cleanup after completion or a thrown trial.
+Run the retained regression check with `node scripts/check-simulation.mjs`. It compares exact seeded results across both scheduling paths, empty and nonempty targets, pity and guarantee settings, counts around 100 and 5,000, and full 100,000-trial runs. Each 100,000-trial result array must match 100,000 direct calls to the single-trial engine. It also checks real event-loop yielding and cleanup after completion or a thrown trial.
 
 `npm run build`, focused ESLint checks, and `git diff --check` passed. Full `npm run lint` still reports 21 errors and 16 warnings. Its output is byte-for-byte identical to the baseline.
 

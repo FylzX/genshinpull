@@ -48,7 +48,7 @@ try {
       } : undefined,
     });
     for (const targets of cases) {
-      for (const count of [0, 1, 99, 100, 4999, 5000, 5001]) {
+      for (const count of [0, 1, 99, 100, 4999, 5000, 5001, 100000]) {
         Math.random = seededRandom();
         const expected = Array.from({ length: count }, () => runOneSimLogic(targets));
         Math.random = seededRandom();
@@ -87,4 +87,4 @@ try {
   else delete globalThis.scheduler;
 }
 
-console.log("Simulation checks passed. Seeded results match and expensive batches yield.");
+console.log("Simulation checks passed. Full 100,000-trial results match in both scheduling paths, and expensive batches yield.");
