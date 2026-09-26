@@ -26,10 +26,12 @@ export function SimulatorFloatingControls({ showScrollTop, onScrollTop, onNextIm
   )
 }
 
-export const SimulatorThemeToggle = memo(function SimulatorThemeToggle({ onToggleTheme }: { onToggleTheme: () => void }) {
+export const SimulatorThemeToggle = memo(function SimulatorThemeToggle({ onToggleTheme, disabled = false }: { onToggleTheme: () => void; disabled?: boolean }) {
   return (
     <Button
       onClick={onToggleTheme}
+      disabled={disabled}
+      title={disabled ? "当前仅启用一个主题" : "切换主题"}
       variant="outline"
       className="fixed bottom-6 right-6 z-[9999] h-10 px-3 rounded-xl bg-white/40 hover:bg-white/60 dark:bg-black/40 dark:hover:bg-black/60 backdrop-blur-md border border-white/30 text-zinc-800 dark:text-zinc-200 shadow-md flex items-center justify-center font-bold transition-all"
     >
