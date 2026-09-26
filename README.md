@@ -4,7 +4,7 @@
 
 国内用户请使用 https://ys.gicalculator.top/
 
-点击 ${\color{#2edaff}\text{奥黛塔准备的使用说明}}$ 或者 ${\color{#ff69b4}\text{奶奶给你准备的使用说明}}$
+如果有疑问, 点击 ${\color{#2edaff}\text{奥黛塔准备的使用说明}}$ 或者 ${\color{#ff69b4}\text{奶奶给你准备的使用说明}}$
 
 如果你觉得好用，不妨点个star鼓励下, 非常感谢～(∠・ω< )⌒★
 
