@@ -23,6 +23,7 @@
 # misc
 .DS_Store
 *.pem
+/GenshinSim-iOS/
 
 # debug
 npm-debug.log*
