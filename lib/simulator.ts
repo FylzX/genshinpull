@@ -167,17 +167,37 @@ export function runOneSimLogic(targets: SimulationTargets): SimResult {
 }
 
 export async function runSimulation(targets: SimulationTargets, count: number): Promise<SimResult[]> {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     const results: SimResult[] =[];
     let completed = 0;
     const batchSize = 5000; 
+    const host = globalThis;
+    const scheduler = "scheduler" in host ? host.scheduler : null;
+    const yieldToMain = scheduler && typeof scheduler === "object" && "yield" in scheduler && typeof scheduler.yield === "function"
+      ? scheduler.yield.bind(scheduler)
+      : null;
 
     function computeBatch() {
-      const end = Math.min(completed + batchSize, count);
-      for (let i = completed; i < end; i++) results.push(runOneSimLogic(targets));
-      completed = end;
-      if (completed < count) setTimeout(computeBatch, 0); 
-      else resolve(results);
+      // Overlap the fallback timer's minimum delay with this batch's work.
+      const timer = yieldToMain ? undefined : setTimeout(computeBatch, 0);
+      try {
+        const end = Math.min(completed + batchSize, count);
+        const started = performance.now();
+        while (completed < end) {
+          const chunkEnd = Math.min(completed + 100, end);
+          for (; completed < chunkEnd; completed++) results.push(runOneSimLogic(targets));
+          if (performance.now() - started >= 8) break;
+        }
+        if (completed < count) {
+          if (yieldToMain) yieldToMain().then(computeBatch, reject);
+        } else {
+          clearTimeout(timer);
+          resolve(results);
+        }
+      } catch (error) {
+        clearTimeout(timer);
+        reject(error);
+      }
     }
     computeBatch();
   });
