@@ -13,7 +13,6 @@ type SimulatorStateValue = {
   useStarglitter: boolean
   setUseStarglitter: React.Dispatch<React.SetStateAction<boolean>>
   simCount: number
-  setSimCount: React.Dispatch<React.SetStateAction<number>>
   loading: boolean
   setLoading: React.Dispatch<React.SetStateAction<boolean>>
   targets: SimulationTargets
@@ -28,13 +27,14 @@ type SimulatorStateValue = {
   actualTotalPullsDisplay: number | string
 }
 
+const simCount = 100000
+
 const SimulatorStateContext = createContext<SimulatorStateValue | null>(null)
 
 export function SimulatorStateProvider({ children }: { children: React.ReactNode }) {
   const [fates, setFates] = useState(0)
   const [primos, setPrimos] = useState(0)
   const [useStarglitter, setUseStarglitter] = useState(false)
-  const [simCount, setSimCount] = useState(100000)
   const [loading, setLoading] = useState(false)
   const [targets, setTargets] = useState<SimulationTargets>({
     charA: 0, charB: 0, weapA: 0, weapB: 0,
@@ -126,7 +126,7 @@ export function SimulatorStateProvider({ children }: { children: React.ReactNode
   return (
     <SimulatorStateContext.Provider value={{
       fates, setFates, primos, setPrimos, useStarglitter, setUseStarglitter,
-      simCount, setSimCount, loading, setLoading, targets, setTargets, names, setNames,
+      simCount, loading, setLoading, targets, setTargets, names, setNames,
       report, setReport, startSim, effectiveFates, ...returnDisplays,
     }}>
       {children}
