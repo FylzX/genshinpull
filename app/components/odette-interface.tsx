@@ -446,7 +446,7 @@ export function OdetteInterface({ theme, onBackgroundChange }: { theme: Simulato
                       id={`${theme}-use-starglitter`} 
                       checked={useStarglitter}
                       onChange={(e) => setUseStarglitter(e.target.checked)}
-                      className="w-5 h-5 accent-[#FFB7C5] cursor-pointer rounded-sm border-zinc-300"
+                      className="simulator-checkbox w-5 h-5 accent-[#FFB7C5] cursor-pointer rounded-sm"
                     />
                     <Label htmlFor={`${theme}-use-starglitter`} className="cursor-pointer font-bold text-zinc-700 dark:text-zinc-300 select-none">
                       算上返还星辉(近似)
@@ -520,7 +520,7 @@ export function OdetteInterface({ theme, onBackgroundChange }: { theme: Simulato
                     id={`${theme}-char-guaranteed`} 
                     checked={targets.isCharGuaranteed}
                     onChange={(e) => setTargets({...targets, isCharGuaranteed: e.target.checked})}
-                    className="w-5 h-5 accent-[#FFB7C5] cursor-pointer rounded-sm border-zinc-300"
+                    className="simulator-checkbox w-5 h-5 accent-[#FFB7C5] cursor-pointer rounded-sm"
                   />
                   <Label htmlFor={`${theme}-char-guaranteed`} className="cursor-pointer font-bold text-[#FFB7C5] select-none">
                     下一个角色必定UP (大保底)
