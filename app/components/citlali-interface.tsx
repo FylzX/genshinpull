@@ -429,7 +429,7 @@ export function CitlaliInterface({ theme, onBackgroundChange }: { theme: Simulat
             </div>
           </div>}
 
-          <Card className="shadow-lg border-white/50 bg-white/85 dark:bg-zinc-950/85 backdrop-blur-md">
+          <Card className="shadow-lg border-white/50 bg-white/85 dark:bg-zinc-950/85 backdrop-blur-md motion-enter" style={{ "--motion-i": 1 } as React.CSSProperties}>
             <CardHeader><CardTitle>设定目标与卡池状态</CardTitle></CardHeader>
             <CardContent className="space-y-6">
               <div className="flex flex-col">
@@ -460,7 +460,8 @@ export function CitlaliInterface({ theme, onBackgroundChange }: { theme: Simulat
                   <Button 
                     onClick={startSim} 
                     disabled={loading} 
-                    className="bg-[#FFB7C5] hover:bg-[#ff9eb2] text-zinc-900 font-extrabold text-lg h-14 px-8 rounded-xl transition-all shadow-[0_0_15px_rgba(255,183,197,0.6)] hover:shadow-[0_0_25px_rgba(255,183,197,0.9)] hover:-translate-y-0.5 ml-0 ring-4 ring-[#FFB7C5]/30"
+                    data-loading={loading}
+                    className="motion-shimmer active:scale-[0.97] bg-[#FFB7C5] hover:bg-[#ff9eb2] text-zinc-900 font-extrabold text-lg h-14 px-8 rounded-xl transition-all shadow-[0_0_15px_rgba(255,183,197,0.6)] hover:shadow-[0_0_25px_rgba(255,183,197,0.9)] hover:-translate-y-0.5 ml-0 ring-4 ring-[#FFB7C5]/30"
                   >
                     {loading ? "计算中..." : "开始计算"}
                   </Button>
@@ -562,7 +563,7 @@ export function CitlaliInterface({ theme, onBackgroundChange }: { theme: Simulat
                           }
                         >
                           <div className={item.isChar ? "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3" : ""}>
-                            {item.list.map(name => {
+                            {item.list.map((name, index) => {
                               if (item.isChar) {
                                 const charInfo = avatarData.find(a => a.zh === name);
                                 const element = charInfo?.en ? getCharacterElement(charInfo.en) : undefined;
@@ -572,8 +573,9 @@ export function CitlaliInterface({ theme, onBackgroundChange }: { theme: Simulat
                                   <SelectItem 
                                     key={name} 
                                     value={name} 
+                                    style={{ "--motion-i": Math.min(index, 20) } as React.CSSProperties}
                                     className={`
-                                      group relative !p-[6px] rounded-xl cursor-pointer transition-all duration-300 [&>span:last-child]:w-full
+                                      motion-pop group relative !p-[6px] rounded-xl cursor-pointer transition-all duration-300 [&>span:last-child]:w-full
                                       [&>span.absolute]:hidden
                                       ${citlali 
                                         ? 'theme-featured-character bg-[#FFB7C5]/30 hover:bg-[#FFB7C5] border-2 border-[#FFB7C5]' 
@@ -777,7 +779,7 @@ export function CitlaliInterface({ theme, onBackgroundChange }: { theme: Simulat
             </div>
           )}
 
-          <Card className="shadow-lg border-white/50 bg-white/85 dark:bg-zinc-950/85 backdrop-blur-md mt-8">
+          <Card className="shadow-lg border-white/50 bg-white/85 dark:bg-zinc-950/85 backdrop-blur-md mt-8 motion-enter" style={{ "--motion-i": 2 } as React.CSSProperties}>
             <CardContent className="p-6 flex flex-col items-center justify-center space-y-2 text-center">
               <p className="text-lg font-bold text-zinc-700 dark:text-zinc-200 tracking-wide">
                 下滑欣赏奶奶我的美貌~
