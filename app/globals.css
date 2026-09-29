@@ -104,6 +104,20 @@
   animation: motion-pop 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
   animation-delay: calc(var(--motion-i, 0) * 18ms);
 }
+@keyframes motion-burst {
+  from { transform: scale(0.4); opacity: 0.9; }
+  to { transform: scale(1.6); opacity: 0; }
+}
+.motion-burst { position: relative; isolation: isolate; }
+.motion-burst::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(closest-side, var(--motion-accent, #FFB7C5), transparent);
+  animation: motion-burst 900ms ease-out 150ms both;
+}
 .motion-shimmer { position: relative; overflow: hidden; }
 .motion-shimmer[data-loading="true"]::after {
   content: "";
@@ -117,6 +131,7 @@
 @media (prefers-reduced-motion: reduce) {
   .motion-enter,
   .motion-pop,
+  .motion-burst::before,
   .motion-shimmer::after {
     animation: none;
   }
