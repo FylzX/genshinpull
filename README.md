@@ -6,7 +6,7 @@
 
 如果有疑问, 点击 ${\color{#2edaff}\text{奥黛塔准备的使用说明}}$ 或者 ${\color{#ff69b4}\text{奶奶给你准备的使用说明}}$
 
-如果你觉得好用，不妨点个star鼓励下, 非常感谢～(∠・ω< )⌒★
+如果你觉得好用，不妨点个star鼓励下, 谢谢泥～(∠・ω< )⌒★
 
 <img width="400" height="400" alt="653157174-108d88d4-d2fb-4d88-bd56-bd30b12a93a4" src="https://github.com/user-attachments/assets/58eab667-12e7-48b6-8451-8456e92901b8" />
 
