@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -13,6 +12,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGri
 import avatarData from "../avatar.json"
 import bgData from "../background.json"
 import characterElements from "../character-elements.json"
+import { NumberInput } from "./number-input"
 import { SimulatorBackground } from "./simulator-background"
 import { SimulatorFloatingControls } from "./simulator-floating-controls"
 import { SimulatorHeader } from "./simulator-header"
@@ -433,12 +433,12 @@ export function OdetteInterface({ theme, onBackgroundChange }: { theme: Simulato
                 <div className="flex flex-wrap items-center gap-6">
                   <div className="flex items-center gap-2">
                     <Label className="font-bold text-zinc-700 dark:text-zinc-300">已有粉球:</Label>
-                    <Input type="number" value={fates} onChange={e => setFates(Number(e.target.value))} className="w-28 bg-white/50 dark:bg-black/50" />
+                    <NumberInput value={fates} onValueChange={setFates} className="w-28 bg-white/50 dark:bg-black/50" />
                   </div>
                   
                   <div className="flex items-center gap-2">
                     <Label className="font-bold text-zinc-700 dark:text-zinc-300">已有原石:</Label>
-                    <Input type="number" value={primos} onChange={e => setPrimos(Number(e.target.value))} className="w-28 bg-white/50 dark:bg-black/50" />
+                    <NumberInput value={primos} onValueChange={setPrimos} className="w-28 bg-white/50 dark:bg-black/50" />
                   </div>
                   
                   <div className="flex items-center space-x-2 border-zinc-300 dark:border-zinc-700">
@@ -493,10 +493,10 @@ export function OdetteInterface({ theme, onBackgroundChange }: { theme: Simulato
                 <div className="flex items-center gap-3">
                   <Label className="font-semibold text-zinc-700 dark:text-zinc-300">角色池已垫:</Label>
                   <div className="relative">
-                    <Input 
-                      type="number" min={0} max={89} 
-                      value={targets.charPity} 
-                      onChange={e => setTargets({...targets, charPity: Math.min(89, Math.max(0, Number(e.target.value)))})} 
+                    <NumberInput 
+                      min={0} max={89} 
+                      value={targets.charPity ?? 0} 
+                      onValueChange={v => setTargets({...targets, charPity: Math.min(89, Math.max(0, v))})} 
                       className="w-20 bg-white/70 dark:bg-black/70 pr-6 text-center" 
                     />
                     <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-zinc-400">抽</span>
@@ -506,10 +506,10 @@ export function OdetteInterface({ theme, onBackgroundChange }: { theme: Simulato
                 <div className="flex items-center gap-3">
                   <Label className="font-semibold text-zinc-700 dark:text-zinc-300">武器池已垫:</Label>
                   <div className="relative">
-                    <Input 
-                      type="number" min={0} max={79} 
-                      value={targets.weapPity} 
-                      onChange={e => setTargets({...targets, weapPity: Math.min(79, Math.max(0, Number(e.target.value)))})} 
+                    <NumberInput 
+                      min={0} max={79} 
+                      value={targets.weapPity ?? 0} 
+                      onValueChange={v => setTargets({...targets, weapPity: Math.min(79, Math.max(0, v))})} 
                       className="w-20 bg-white/70 dark:bg-black/70 pr-6 text-center" 
                     />
                     <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-zinc-400">抽</span>
@@ -624,9 +624,9 @@ export function OdetteInterface({ theme, onBackgroundChange }: { theme: Simulato
                         </SelectContent>
 
                       </Select>
-                      <Input type="number" min={0}
+                      <NumberInput min={0}
                              value={(targets as any)[item.targetKey]} 
-                             onChange={e => setTargets({...targets,[item.targetKey]: Number(e.target.value)})} 
+                             onValueChange={v => setTargets({...targets,[item.targetKey]: v})} 
                              className={item.isChar
                                ? "!h-[60px] !w-[60px] rounded-xl bg-white/50 text-center text-lg font-semibold dark:bg-black/50"
                                : "w-16 bg-white/50 dark:bg-black/50"} />
