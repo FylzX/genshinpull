@@ -12,7 +12,7 @@ type SimulatorHeaderProps = {
 
 export function SimulatorHeader({ title, githubLabel, readmeLabel, readmeHref, probHref }: SimulatorHeaderProps) {
   return (
-    <div className="text-center mb-8 space-y-2 bg-white/70 dark:bg-black/50 backdrop-blur-sm p-4 rounded-2xl shadow-sm inline-block mx-auto flex flex-col items-center">
+    <div className="motion-enter text-center mb-8 space-y-2 bg-white/70 dark:bg-black/50 backdrop-blur-sm p-4 rounded-2xl shadow-sm inline-block mx-auto flex flex-col items-center">
       <h1 className="text-3xl font-bold tracking-tight">{title}</h1>
       <div className="flex flex-col items-start gap-1">
         <a href="https://github.com/FylzX/genshinpull" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-sm font-medium text-zinc-600 hover:text-[#FFB7C5] transition-colors duration-300">
