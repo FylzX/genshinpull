@@ -30,6 +30,9 @@ const CITLALI_HOVER_TEXT_COLOR = "group-hover:text-white";
 const isCitlali = (name: string) => name === "茜特菈莉";
 const isPinkWeapon = (name: string) => name === "祭星者之望";
 
+const CALC_BUTTON_CLASS =
+  "motion-shimmer active:scale-[0.97] bg-[#FFB7C5] hover:bg-[#ff9eb2] text-zinc-900 font-extrabold text-lg h-14 px-8 rounded-xl transition-all shadow-[0_0_15px_rgba(255,183,197,0.6)] hover:shadow-[0_0_25px_rgba(255,183,197,0.9)] hover:-translate-y-0.5 ml-0 ring-4 ring-[#FFB7C5]/30";
+
 const CHAR_LIST = avatarData.map(item => item.zh);
 const ELEMENT_BADGE_SIZE = "w-8 h-8";
 const ELEMENT_COLORS: Record<string, string> = {
@@ -104,6 +107,7 @@ export function CitlaliInterface({ theme, onBackgroundChange }: { theme: Simulat
   const [isVideoSupported, setIsVideoSupported] = useState(true); 
   const [showScrollTop, setShowScrollTop] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const resultRef = useRef<HTMLDivElement>(null);
 
   const {
     fates, setFates, primos, setPrimos, useStarglitter, setUseStarglitter,
@@ -186,6 +190,15 @@ export function CitlaliInterface({ theme, onBackgroundChange }: { theme: Simulat
       setNames(prev => ({ ...prev, cA: "茜特菈莉", cB: "奥黛塔", wA: "祭星者之望", wB: "白湖冬羽" }));
     }
   }, [theme]);
+
+  useEffect(() => {
+    const el = resultRef.current;
+    if (!report || !el?.offsetParent) return;
+    // 用 offsetTop 而不是 scrollIntoView: zoom-in 动画的 transform 会让后者滚过头
+    let top = 0;
+    for (let node: HTMLElement | null = el; node; node = node.offsetParent as HTMLElement | null) top += node.offsetTop;
+    window.scrollTo({ top: top - 16, behavior: "smooth" });
+  }, [report]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -432,9 +445,9 @@ export function CitlaliInterface({ theme, onBackgroundChange }: { theme: Simulat
 
           <Card className="shadow-lg border-white/50 bg-white/85 dark:bg-zinc-950/85 backdrop-blur-md motion-enter" style={{ "--motion-i": 1 } as React.CSSProperties}>
             <CardHeader><CardTitle>设定目标与卡池状态</CardTitle></CardHeader>
-            <CardContent className="space-y-6">
+            <CardContent className="flex flex-col gap-6">
               <div className="flex flex-col">
-                <div className="flex flex-wrap items-center gap-6">
+                <div className="flex flex-wrap items-center gap-x-6 gap-y-3 md:gap-6">
                   <div className="flex items-center gap-2">
                     <Label className="font-bold text-zinc-700 dark:text-zinc-300">已有粉球:</Label>
                     <NumberInput value={fates} onValueChange={setFates} className="w-28 bg-white/50 dark:bg-black/50" />
@@ -462,7 +475,7 @@ export function CitlaliInterface({ theme, onBackgroundChange }: { theme: Simulat
                     onClick={startSim} 
                     disabled={loading} 
                     data-loading={loading}
-                    className="motion-shimmer active:scale-[0.97] bg-[#FFB7C5] hover:bg-[#ff9eb2] text-zinc-900 font-extrabold text-lg h-14 px-8 rounded-xl transition-all shadow-[0_0_15px_rgba(255,183,197,0.6)] hover:shadow-[0_0_25px_rgba(255,183,197,0.9)] hover:-translate-y-0.5 ml-0 ring-4 ring-[#FFB7C5]/30"
+                    className={`${CALC_BUTTON_CLASS} hidden md:inline-flex`}
                   >
                     {loading ? "计算中..." : "开始计算"}
                   </Button>
@@ -493,7 +506,7 @@ export function CitlaliInterface({ theme, onBackgroundChange }: { theme: Simulat
                 </div>
               </div>
 
-              <div className="flex flex-wrap items-center gap-6 p-4 rounded-xl bg-[#fff0f5]/50 dark:bg-[#2a1a20]/50 border border-[#FFB7C5]/30">
+              <div className="flex flex-wrap items-center gap-x-6 gap-y-3 md:gap-6 p-4 rounded-xl bg-[#fff0f5]/50 dark:bg-[#2a1a20]/50 border border-[#FFB7C5]/30">
                 <div className="flex items-center gap-3">
                   <Label className="font-semibold text-zinc-700 dark:text-zinc-300">角色池已垫:</Label>
                   <div className="relative">
@@ -520,7 +533,7 @@ export function CitlaliInterface({ theme, onBackgroundChange }: { theme: Simulat
                   </div>
                 </div>
 
-                <div className="flex items-center space-x-2 pl-4 border-l border-[#FFB7C5]/40">
+                <div className="flex items-center space-x-2 md:pl-4 md:border-l border-[#FFB7C5]/40">
                   <input 
                     type="checkbox" 
                     id={`${theme}-char-guaranteed`} 
@@ -550,7 +563,7 @@ export function CitlaliInterface({ theme, onBackgroundChange }: { theme: Simulat
                           bg-white/50 dark:bg-black/50 transition-all text-left
                           ${item.isChar
                             ? '!h-[60px] w-full md:!w-[210px] rounded-xl [&>span]:!line-clamp-none [&>span]:flex [&>span]:items-center [&>span]:flex-1 [&>span]:min-w-0'
-                            : 'h-10 w-full md:w-[160px]'}
+                            : 'max-md:!h-11 h-10 w-full md:w-[160px]'}
                           ${isFeaturedCharacter((names as any)[item.key]) && item.isChar ? `theme-featured-character border-[#FFB7C5] ring-2 ring-[#FFB7C5]/30` : ''}
                           ${isFeaturedWeapon((names as any)[item.key]) && !item.isChar ? 'text-[#FFB7C5] font-bold border-[#FFB7C5]' : ''}
                         `}>
@@ -559,11 +572,11 @@ export function CitlaliInterface({ theme, onBackgroundChange }: { theme: Simulat
                         
                         <SelectContent 
                           className={item.isChar 
-                            ? "w-[92vw] max-w-[820px] max-h-[50vh] overflow-y-auto overscroll-contain touch-pan-y bg-white/30 dark:bg-black/30 backdrop-blur-xl border border-white/40 shadow-2xl rounded-2xl p-4"
+                            ? "w-[92vw] max-w-[820px] max-h-[50vh] overflow-y-auto overscroll-contain touch-pan-y bg-white/30 dark:bg-black/30 backdrop-blur-xl border border-white/40 shadow-2xl rounded-2xl p-2 sm:p-4"
                             : ""
                           }
                         >
-                          <div className={item.isChar ? "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3" : ""}>
+                          <div className={item.isChar ? "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 sm:gap-3" : ""}>
                             {item.list.map((name, index) => {
                               if (item.isChar) {
                                 const charInfo = avatarData.find(a => a.zh === name);
@@ -583,8 +596,8 @@ export function CitlaliInterface({ theme, onBackgroundChange }: { theme: Simulat
                                         : 'bg-white/40 dark:bg-zinc-800/40 hover:bg-white dark:hover:bg-zinc-700 border border-white/50'}
                                     `}
                                   >
-                                    <div className="flex w-full min-w-0 items-center gap-3 overflow-hidden pr-1">
-                                      <div data-avatar-container className="w-[44px] h-[44px] rounded-md overflow-hidden flex-shrink-0 shadow-sm border border-zinc-300/80 dark:border-zinc-600/80 flex items-center justify-center bg-white/50 dark:bg-zinc-800/50 transition-all">
+                                    <div className="flex w-full min-w-0 items-center gap-1.5 overflow-hidden sm:gap-3 sm:pr-1">
+                                      <div data-avatar-container className="w-9 h-9 sm:w-[44px] sm:h-[44px] rounded-md overflow-hidden flex-shrink-0 shadow-sm border border-zinc-300/80 dark:border-zinc-600/80 flex items-center justify-center bg-white/50 dark:bg-zinc-800/50 transition-all">
                                         {charInfo?.icon ? (
                                           // eslint-disable-next-line @next/next/no-img-element
                                           <img src={charInfo.icon} alt={name} className="w-full h-full object-cover" />
@@ -592,7 +605,7 @@ export function CitlaliInterface({ theme, onBackgroundChange }: { theme: Simulat
                                           <div className="w-full h-full bg-zinc-300 dark:bg-zinc-700" />
                                         )}
                                       </div>
-                                      <span className={`text-[15px] text-left font-bold block whitespace-nowrap flex-1 min-w-0 ${citlali ? `${CITLALI_TEXT_COLOR} ${CITLALI_HOVER_TEXT_COLOR}` : 'text-zinc-800 dark:text-zinc-200'}`}>
+                                      <span className={`text-sm sm:text-[15px] text-left font-bold block whitespace-nowrap truncate flex-1 min-w-0 ${citlali ? `${CITLALI_TEXT_COLOR} ${CITLALI_HOVER_TEXT_COLOR}` : 'text-zinc-800 dark:text-zinc-200'}`}>
                                         {name}
                                       </span>
                                       {element && (
@@ -638,11 +651,20 @@ export function CitlaliInterface({ theme, onBackgroundChange }: { theme: Simulat
                   </div>
                 ))}
               </div>
+
+              <Button
+                onClick={startSim}
+                disabled={loading}
+                data-loading={loading}
+                className={`${CALC_BUTTON_CLASS} w-full md:hidden`}
+              >
+                {loading ? "计算中..." : "开始计算"}
+              </Button>
             </CardContent>
           </Card>
 
           {report?.negative ? (
-            <div className="space-y-6 animate-in fade-in zoom-in-95 duration-500">
+            <div ref={resultRef} className="space-y-6 animate-in fade-in zoom-in-95 duration-500">
               <div className="text-center py-6 bg-white/70 dark:bg-black/50 backdrop-blur-sm rounded-2xl shadow-sm mx-auto max-w-xl">
                 <h2 className="text-2xl font-black text-orange-500 drop-shadow-md">
                   怎么,负债累累还想来抽卡?<br />奶奶我可没时间陪你在这里浪费, 哼!
@@ -651,7 +673,7 @@ export function CitlaliInterface({ theme, onBackgroundChange }: { theme: Simulat
               </div>
             </div>
           ) : report?.empty ? (
-            <div className="space-y-6 animate-in fade-in zoom-in-95 duration-500">
+            <div ref={resultRef} className="space-y-6 animate-in fade-in zoom-in-95 duration-500">
               <div className="text-center py-6 bg-white/70 dark:bg-black/50 backdrop-blur-sm rounded-2xl shadow-sm mx-auto max-w-xl">
                 <h2 className="text-2xl font-black text-orange-500 drop-shadow-md">
                   怎么, 谁都不想抽?<br />奶奶我可没时间陪你在这里浪费, 哼!
@@ -660,7 +682,7 @@ export function CitlaliInterface({ theme, onBackgroundChange }: { theme: Simulat
               </div>
             </div>
           ) : report && (
-            <div key={report.runId} className="space-y-6">
+            <div key={report.runId} ref={resultRef} className="space-y-6">
               <div className="motion-enter motion-burst text-center py-6 bg-white/70 dark:bg-black/50 backdrop-blur-sm rounded-2xl shadow-sm mx-auto max-w-sm" style={{ "--motion-i": 0 } as React.CSSProperties}>
                 
                 {/* 👇 这里把原来的固定数字，换成了刚刚写的动画组件 */}
