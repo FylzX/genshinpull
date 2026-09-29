@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -13,6 +12,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGri
 import avatarData from "../avatar.json"
 import bgData from "../background.json"
 import characterElements from "../character-elements.json"
+import { NumberInput } from "./number-input"
 import { SimulatorBackground } from "./simulator-background"
 import { SimulatorFloatingControls } from "./simulator-floating-controls"
 import { SimulatorHeader } from "./simulator-header"
@@ -326,7 +326,8 @@ export function CitlaliInterface({ theme, onBackgroundChange }: { theme: Simulat
 
     setReport({ 
       prob, pulls, avgPulls, avgDust, avgBallsBack, theoryAvg, 
-      netCost: avgPulls - avgBallsBack, topCombos, trimmedHistData
+      netCost: avgPulls - avgBallsBack, topCombos, trimmedHistData,
+      runId: Date.now()
     });
     } finally {
       setLoading(false);
@@ -429,19 +430,19 @@ export function CitlaliInterface({ theme, onBackgroundChange }: { theme: Simulat
             </div>
           </div>}
 
-          <Card className="shadow-lg border-white/50 bg-white/85 dark:bg-zinc-950/85 backdrop-blur-md">
+          <Card className="shadow-lg border-white/50 bg-white/85 dark:bg-zinc-950/85 backdrop-blur-md motion-enter" style={{ "--motion-i": 1 } as React.CSSProperties}>
             <CardHeader><CardTitle>设定目标与卡池状态</CardTitle></CardHeader>
             <CardContent className="space-y-6">
               <div className="flex flex-col">
                 <div className="flex flex-wrap items-center gap-6">
                   <div className="flex items-center gap-2">
                     <Label className="font-bold text-zinc-700 dark:text-zinc-300">已有粉球:</Label>
-                    <Input type="number" value={fates} onChange={e => setFates(Number(e.target.value))} className="w-28 bg-white/50 dark:bg-black/50" />
+                    <NumberInput value={fates} onValueChange={setFates} className="w-28 bg-white/50 dark:bg-black/50" />
                   </div>
                   
                   <div className="flex items-center gap-2">
                     <Label className="font-bold text-zinc-700 dark:text-zinc-300">已有原石:</Label>
-                    <Input type="number" value={primos} onChange={e => setPrimos(Number(e.target.value))} className="w-28 bg-white/50 dark:bg-black/50" />
+                    <NumberInput value={primos} onValueChange={setPrimos} className="w-28 bg-white/50 dark:bg-black/50" />
                   </div>
                   
                   <div className="flex items-center space-x-2 border-zinc-300 dark:border-zinc-700">
@@ -460,7 +461,8 @@ export function CitlaliInterface({ theme, onBackgroundChange }: { theme: Simulat
                   <Button 
                     onClick={startSim} 
                     disabled={loading} 
-                    className="bg-[#FFB7C5] hover:bg-[#ff9eb2] text-zinc-900 font-extrabold text-lg h-14 px-8 rounded-xl transition-all shadow-[0_0_15px_rgba(255,183,197,0.6)] hover:shadow-[0_0_25px_rgba(255,183,197,0.9)] hover:-translate-y-0.5 ml-0 ring-4 ring-[#FFB7C5]/30"
+                    data-loading={loading}
+                    className="motion-shimmer active:scale-[0.97] bg-[#FFB7C5] hover:bg-[#ff9eb2] text-zinc-900 font-extrabold text-lg h-14 px-8 rounded-xl transition-all shadow-[0_0_15px_rgba(255,183,197,0.6)] hover:shadow-[0_0_25px_rgba(255,183,197,0.9)] hover:-translate-y-0.5 ml-0 ring-4 ring-[#FFB7C5]/30"
                   >
                     {loading ? "计算中..." : "开始计算"}
                   </Button>
@@ -495,10 +497,10 @@ export function CitlaliInterface({ theme, onBackgroundChange }: { theme: Simulat
                 <div className="flex items-center gap-3">
                   <Label className="font-semibold text-zinc-700 dark:text-zinc-300">角色池已垫:</Label>
                   <div className="relative">
-                    <Input 
-                      type="number" min={0} max={89} 
-                      value={targets.charPity} 
-                      onChange={e => setTargets({...targets, charPity: Math.min(89, Math.max(0, Number(e.target.value)))})} 
+                    <NumberInput 
+                      min={0} max={89} 
+                      value={targets.charPity ?? 0} 
+                      onValueChange={v => setTargets({...targets, charPity: Math.min(89, Math.max(0, v))})} 
                       className="w-20 bg-white/70 dark:bg-black/70 pr-6 text-center" 
                     />
                     <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-zinc-400">抽</span>
@@ -508,10 +510,10 @@ export function CitlaliInterface({ theme, onBackgroundChange }: { theme: Simulat
                 <div className="flex items-center gap-3">
                   <Label className="font-semibold text-zinc-700 dark:text-zinc-300">武器池已垫:</Label>
                   <div className="relative">
-                    <Input 
-                      type="number" min={0} max={79} 
-                      value={targets.weapPity} 
-                      onChange={e => setTargets({...targets, weapPity: Math.min(79, Math.max(0, Number(e.target.value)))})} 
+                    <NumberInput 
+                      min={0} max={79} 
+                      value={targets.weapPity ?? 0} 
+                      onValueChange={v => setTargets({...targets, weapPity: Math.min(79, Math.max(0, v))})} 
                       className="w-20 bg-white/70 dark:bg-black/70 pr-6 text-center" 
                     />
                     <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-zinc-400">抽</span>
@@ -562,7 +564,7 @@ export function CitlaliInterface({ theme, onBackgroundChange }: { theme: Simulat
                           }
                         >
                           <div className={item.isChar ? "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3" : ""}>
-                            {item.list.map(name => {
+                            {item.list.map((name, index) => {
                               if (item.isChar) {
                                 const charInfo = avatarData.find(a => a.zh === name);
                                 const element = charInfo?.en ? getCharacterElement(charInfo.en) : undefined;
@@ -572,8 +574,9 @@ export function CitlaliInterface({ theme, onBackgroundChange }: { theme: Simulat
                                   <SelectItem 
                                     key={name} 
                                     value={name} 
+                                    style={{ "--motion-i": Math.min(index, 20) } as React.CSSProperties}
                                     className={`
-                                      group relative !p-[6px] rounded-xl cursor-pointer transition-all duration-300 [&>span:last-child]:w-full
+                                      motion-pop group relative !p-[6px] rounded-xl cursor-pointer transition-all duration-300 [&>span:last-child]:w-full
                                       [&>span.absolute]:hidden
                                       ${citlali 
                                         ? 'theme-featured-character bg-[#FFB7C5]/30 hover:bg-[#FFB7C5] border-2 border-[#FFB7C5]' 
@@ -625,9 +628,9 @@ export function CitlaliInterface({ theme, onBackgroundChange }: { theme: Simulat
                         </SelectContent>
 
                       </Select>
-                      <Input type="number" min={0}
+                      <NumberInput min={0}
                              value={(targets as any)[item.targetKey]} 
-                             onChange={e => setTargets({...targets,[item.targetKey]: Number(e.target.value)})} 
+                             onValueChange={v => setTargets({...targets,[item.targetKey]: v})} 
                              className={item.isChar
                                ? "!h-[60px] !w-[60px] rounded-xl bg-white/50 text-center text-lg font-semibold dark:bg-black/50"
                                : "w-16 bg-white/50 dark:bg-black/50"} />
@@ -657,8 +660,8 @@ export function CitlaliInterface({ theme, onBackgroundChange }: { theme: Simulat
               </div>
             </div>
           ) : report && (
-            <div className="space-y-6 animate-in fade-in zoom-in-95 duration-500">
-              <div className="text-center py-6 bg-white/70 dark:bg-black/50 backdrop-blur-sm rounded-2xl shadow-sm mx-auto max-w-sm">
+            <div key={report.runId} className="space-y-6">
+              <div className="motion-enter motion-burst text-center py-6 bg-white/70 dark:bg-black/50 backdrop-blur-sm rounded-2xl shadow-sm mx-auto max-w-sm" style={{ "--motion-i": 0 } as React.CSSProperties}>
                 
                 {/* 👇 这里把原来的固定数字，换成了刚刚写的动画组件 */}
                 <h2 className={`text-6xl font-black tracking-tighter ${report.prob > 0.5 ? 'text-green-500' : 'text-orange-500'} drop-shadow-md`}>
@@ -668,7 +671,7 @@ export function CitlaliInterface({ theme, onBackgroundChange }: { theme: Simulat
                 <p className="text-zinc-600 font-bold mt-2">预计成功率</p>
               </div>
 
-              <Card className="shadow-lg border-white/50 bg-white/85 dark:bg-zinc-950/85 backdrop-blur-md w-full">
+              <Card className="shadow-lg border-white/50 bg-white/85 dark:bg-zinc-950/85 backdrop-blur-md w-full motion-enter" style={{ "--motion-i": 1 } as React.CSSProperties}>
                 <CardHeader>
                   <CardTitle className="flex justify-between items-end">
                     <span>抽卡消耗分布图</span>
@@ -699,7 +702,7 @@ export function CitlaliInterface({ theme, onBackgroundChange }: { theme: Simulat
                 </CardContent>
               </Card>
 
-              <div className="grid md:grid-cols-2 gap-6">
+              <div className="grid md:grid-cols-2 gap-6 motion-enter" style={{ "--motion-i": 2 } as React.CSSProperties}>
                 <Card className="shadow-lg border-white/50 bg-white/85 dark:bg-zinc-950/85 backdrop-blur-md">
                   <CardHeader><CardTitle>累积概率分布</CardTitle></CardHeader>
                   <CardContent>
@@ -743,7 +746,7 @@ export function CitlaliInterface({ theme, onBackgroundChange }: { theme: Simulat
                 </Card>
               </div>
 
-              <Card className="shadow-lg border-white/50 bg-white/85 dark:bg-zinc-950/85 backdrop-blur-md mt-6">
+              <Card className="shadow-lg border-white/50 bg-white/85 dark:bg-zinc-950/85 backdrop-blur-md mt-6 motion-enter" style={{ "--motion-i": 3 } as React.CSSProperties}>
                 <CardHeader><CardTitle>详细收获组合分布</CardTitle></CardHeader>
                 <CardContent className="bg-white/40 dark:bg-zinc-900/40 p-6 rounded-lg font-sans text-base space-y-2 border border-zinc-200/50">
                   {report.topCombos.map(([key, count]: [string, number], idx: number) => {
@@ -777,7 +780,7 @@ export function CitlaliInterface({ theme, onBackgroundChange }: { theme: Simulat
             </div>
           )}
 
-          <Card className="shadow-lg border-white/50 bg-white/85 dark:bg-zinc-950/85 backdrop-blur-md mt-8">
+          <Card className="shadow-lg border-white/50 bg-white/85 dark:bg-zinc-950/85 backdrop-blur-md mt-8 motion-enter" style={{ "--motion-i": 2 } as React.CSSProperties}>
             <CardContent className="p-6 flex flex-col items-center justify-center space-y-2 text-center">
               <p className="text-lg font-bold text-zinc-700 dark:text-zinc-200 tracking-wide">
                 下滑欣赏奶奶我的美貌~

@@ -1,6 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useRef, useState } from "react"
+import { flushSync } from "react-dom"
 import { defaultTheme, enabledThemes, themeIds, themeInterfaces } from "./components/theme-registry"
 import type { SimulatorTheme } from "./components/theme-types"
 import { SimulatorStateProvider } from "./components/simulator-state"
@@ -31,24 +32,52 @@ export default function GenshinSimulatorPage() {
     document.documentElement.classList.remove("theme-highlight-suppressed")
   }, [])
 
-  const toggleTheme = useCallback(() => {
+  const toggleTheme = useCallback((origin: { x: number; y: number }) => {
     if (enabledThemes.length < 2) return
+    const root = document.documentElement
     const nextTheme = enabledThemes[(enabledThemes.indexOf(themeRef.current) + 1) % enabledThemes.length]
     const sequence = ++switchSequence.current
     themeRef.current = nextTheme
-    document.documentElement.classList.add("theme-highlight-suppressed")
-    setTheme(nextTheme)
-    setColorTheme(nextTheme)
 
-    const firstFrame = window.requestAnimationFrame(() => {
-      const secondFrame = window.requestAnimationFrame(() => {
-        if (switchSequence.current === sequence) {
-          document.documentElement.classList.remove("theme-highlight-suppressed")
-        }
+    // Suppress inside commit so the old view-transition snapshot keeps the featured highlight.
+    const commit = () => {
+      root.classList.add("theme-highlight-suppressed")
+      setTheme(nextTheme)
+      setColorTheme(nextTheme)
+    }
+    const releaseHighlight = () => {
+      const firstFrame = window.requestAnimationFrame(() => {
+        const secondFrame = window.requestAnimationFrame(() => {
+          if (switchSequence.current === sequence) {
+            root.classList.remove("theme-highlight-suppressed")
+          }
+        })
+        switchFrames.current.push(secondFrame)
       })
-      switchFrames.current.push(secondFrame)
+      switchFrames.current.push(firstFrame)
+    }
+
+    if (typeof document.startViewTransition !== "function" || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      commit()
+      releaseHighlight()
+      return
+    }
+
+    // Percentages, not px: Chromium on 2x displays places px clip-paths on view-transition snapshots at half the coordinates.
+    const { innerWidth: w, innerHeight: h } = window
+    const radius = Math.hypot(Math.max(origin.x, w - origin.x), Math.max(origin.y, h - origin.y))
+    root.style.setProperty("--reveal-x", `${(origin.x / w) * 100}%`)
+    root.style.setProperty("--reveal-y", `${(origin.y / h) * 100}%`)
+    root.style.setProperty("--reveal-r", `${(radius / (Math.hypot(w, h) / Math.SQRT2)) * 100}%`)
+    root.classList.add("theme-switching")
+    const transition = document.startViewTransition(() => {
+      flushSync(commit)
+      releaseHighlight()
     })
-    switchFrames.current.push(firstFrame)
+    // A newer toggle skips this transition; only the latest one may clear the flag.
+    transition.finished.finally(() => {
+      if (switchSequence.current === sequence) root.classList.remove("theme-switching")
+    })
   }, [])
 
   const updateBackground = (backgroundTheme: SimulatorTheme, background: string) => {
