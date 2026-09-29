@@ -322,7 +322,8 @@ export function OdetteInterface({ theme, onBackgroundChange }: { theme: Simulato
 
     setReport({ 
       prob, pulls, avgPulls, avgDust, avgBallsBack, theoryAvg, 
-      netCost: avgPulls - avgBallsBack, topCombos, trimmedHistData
+      netCost: avgPulls - avgBallsBack, topCombos, trimmedHistData,
+      runId: Date.now()
     });
     } finally {
       setLoading(false);
@@ -655,8 +656,8 @@ export function OdetteInterface({ theme, onBackgroundChange }: { theme: Simulato
               </div>
             </div>
           ) : report && (
-            <div className="space-y-6 animate-in fade-in zoom-in-95 duration-500">
-              <div className="text-center py-6 bg-white/70 dark:bg-black/50 backdrop-blur-sm rounded-2xl shadow-sm mx-auto max-w-sm">
+            <div key={report.runId} className="space-y-6">
+              <div className="motion-enter motion-burst text-center py-6 bg-white/70 dark:bg-black/50 backdrop-blur-sm rounded-2xl shadow-sm mx-auto max-w-sm" style={{ "--motion-i": 0 } as React.CSSProperties}>
                 
                 {/* 👇 这里把原来的固定数字，换成了刚刚写的动画组件 */}
                 <h2 className={`text-6xl font-black tracking-tighter ${report.prob > 0.5 ? 'text-green-500' : 'text-orange-500'} drop-shadow-md`}>
@@ -666,7 +667,7 @@ export function OdetteInterface({ theme, onBackgroundChange }: { theme: Simulato
                 <p className="text-zinc-600 font-bold mt-2">预计成功率</p>
               </div>
 
-              <Card className="shadow-lg border-white/50 bg-white/85 dark:bg-zinc-950/85 backdrop-blur-md w-full">
+              <Card className="shadow-lg border-white/50 bg-white/85 dark:bg-zinc-950/85 backdrop-blur-md w-full motion-enter" style={{ "--motion-i": 1 } as React.CSSProperties}>
                 <CardHeader>
                   <CardTitle className="flex justify-between items-end">
                     <span>抽卡消耗分布图</span>
@@ -697,7 +698,7 @@ export function OdetteInterface({ theme, onBackgroundChange }: { theme: Simulato
                 </CardContent>
               </Card>
 
-              <div className="grid md:grid-cols-2 gap-6">
+              <div className="grid md:grid-cols-2 gap-6 motion-enter" style={{ "--motion-i": 2 } as React.CSSProperties}>
                 <Card className="shadow-lg border-white/50 bg-white/85 dark:bg-zinc-950/85 backdrop-blur-md">
                   <CardHeader><CardTitle>累积概率分布</CardTitle></CardHeader>
                   <CardContent>
@@ -741,7 +742,7 @@ export function OdetteInterface({ theme, onBackgroundChange }: { theme: Simulato
                 </Card>
               </div>
 
-              <Card className="shadow-lg border-white/50 bg-white/85 dark:bg-zinc-950/85 backdrop-blur-md mt-6">
+              <Card className="shadow-lg border-white/50 bg-white/85 dark:bg-zinc-950/85 backdrop-blur-md mt-6 motion-enter" style={{ "--motion-i": 3 } as React.CSSProperties}>
                 <CardHeader><CardTitle>详细收获组合分布</CardTitle></CardHeader>
                 <CardContent className="bg-white/40 dark:bg-zinc-900/40 p-6 rounded-lg font-sans text-base space-y-2 border border-zinc-200/50">
                   {report.topCombos.map(([key, count]: [string, number], idx: number) => {
