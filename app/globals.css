@@ -139,6 +139,7 @@
   font-weight: 600;
   letter-spacing: 0.02em;
   cursor: pointer;
+  box-shadow: 0 0 22px -2px color-mix(in srgb, var(--wish-bg-hover) 60%, transparent);
   -webkit-tap-highlight-color: transparent;
 }
 .theme-odette .wish-button { --wish-bg: rgb(46, 218, 255); --wish-bg-hover: rgb(24, 185, 224); }
@@ -146,12 +147,13 @@
 @media (hover: hover) {
   .wish-button:hover:not(:disabled) {
     background: var(--wish-bg-hover);
+    box-shadow: 0 0 28px 0 color-mix(in srgb, var(--wish-bg-hover) 70%, transparent);
   }
 }
 .wish-button:active:not(:disabled) { transform: scale(0.97); transition-duration: 0.12s; }
 
 /* Specificity matches the global theme transition rule at the top of this file, which would otherwise win. */
-:root .wish-button { transition: transform 0.5s var(--wish-spring), background-color 0.2s; }
+:root .wish-button { transition: transform 0.5s var(--wish-spring), background-color 0.2s, box-shadow 0.3s; }
 :root .wish-button__label { transition: transform 0.45s var(--wish-out), opacity 0.3s; }
 
 .wish-button__labels { position: relative; display: grid; height: 22px; overflow: hidden; }
