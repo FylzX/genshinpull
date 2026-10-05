@@ -12,6 +12,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGri
 import avatarData from "../avatar.json"
 import bgData from "../background.json"
 import characterElements from "../character-elements.json"
+import { CalculateButton } from "./calculate-button"
 import { NumberInput } from "./number-input"
 import { SimulatorBackground } from "./simulator-background"
 import { SimulatorFloatingControls } from "./simulator-floating-controls"
@@ -29,9 +30,6 @@ const CITLALI_HOVER_TEXT_COLOR = "group-hover:text-white";
 
 const isCitlali = (name: string) => name === "茜特菈莉";
 const isPinkWeapon = (name: string) => name === "祭星者之望";
-
-const CALC_BUTTON_CLASS =
-  "motion-shimmer active:scale-[0.97] bg-[#FFB7C5] hover:bg-[#ff9eb2] text-zinc-900 font-extrabold text-lg h-14 px-8 rounded-xl transition-all shadow-[0_0_15px_rgba(255,183,197,0.6)] hover:shadow-[0_0_25px_rgba(255,183,197,0.9)] hover:-translate-y-0.5 ml-0 ring-4 ring-[#FFB7C5]/30";
 
 const CHAR_LIST = avatarData.map(item => item.zh);
 const ELEMENT_BADGE_SIZE = "w-8 h-8";
@@ -471,14 +469,7 @@ export function CitlaliInterface({ theme, onBackgroundChange }: { theme: Simulat
                     </Label>
                   </div>
 
-                  <Button 
-                    onClick={startSim} 
-                    disabled={loading} 
-                    data-loading={loading}
-                    className={`${CALC_BUTTON_CLASS} hidden md:inline-flex`}
-                  >
-                    {loading ? "计算中..." : "开始计算"}
-                  </Button>
+                  <CalculateButton loading={loading} onClick={startSim} className="hidden md:inline-flex" />
                 </div>
 
                 <div className={`grid transition-[grid-template-rows] duration-500 ease-in-out ${useStarglitter ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
@@ -652,14 +643,7 @@ export function CitlaliInterface({ theme, onBackgroundChange }: { theme: Simulat
                 ))}
               </div>
 
-              <Button
-                onClick={startSim}
-                disabled={loading}
-                data-loading={loading}
-                className={`${CALC_BUTTON_CLASS} w-full md:hidden`}
-              >
-                {loading ? "计算中..." : "开始计算"}
-              </Button>
+              <CalculateButton loading={loading} onClick={startSim} className="w-full md:hidden" />
             </CardContent>
           </Card>
 
