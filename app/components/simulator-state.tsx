@@ -39,6 +39,7 @@ export function SimulatorStateProvider({ children }: { children: React.ReactNode
   const [targets, setTargets] = useState<SimulationTargets>({
     charA: 0, charB: 0, weapA: 0, weapB: 0,
     charPity: 0, weapPity: 0, isCharGuaranteed: false,
+    initialCharCounter: 1,
   })
   const [names, setNames] = useState<Names>({
     cA: "茜特菈莉", cB: "奥黛塔", wA: "祭星者之望", wB: "白湖冬羽",

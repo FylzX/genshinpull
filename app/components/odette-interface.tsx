@@ -13,6 +13,7 @@ import avatarData from "../avatar.json"
 import bgData from "../background.json"
 import characterElements from "../character-elements.json"
 import { CalculateButton } from "./calculate-button"
+import { CapturingRadianceInput } from "./capturing-radiance-input"
 import { NumberInput } from "./number-input"
 import { SimulatorBackground } from "./simulator-background"
 import { SimulatorFloatingControls } from "./simulator-floating-controls"
@@ -519,6 +520,12 @@ export function OdetteInterface({ theme, onBackgroundChange }: { theme: Simulato
                     <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-zinc-400">抽</span>
                   </div>
                 </div>
+
+                <CapturingRadianceInput
+                  id={`${theme}-initial-char-counter`}
+                  value={targets.initialCharCounter ?? 1}
+                  onValueChange={value => setTargets(previous => ({ ...previous, initialCharCounter: value }))}
+                />
 
                 <div className="flex items-center space-x-2 md:pl-4 md:border-l border-[#FFB7C5]/40">
                   <input 

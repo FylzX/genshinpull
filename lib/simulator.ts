@@ -6,6 +6,7 @@ export interface SimulationTargets {
   charPity?: number;        
   weapPity?: number;        
   isCharGuaranteed?: boolean; 
+  initialCharCounter?: number;
 }
 
 export interface SimResult {
@@ -14,8 +15,10 @@ export interface SimResult {
 }
 
 export function runOneSimLogic(targets: SimulationTargets): SimResult {
-  // 一开始计数器为1
-  let charCounter = 1;
+  const initialCharCounter = targets.initialCharCounter ?? 1;
+  let charCounter = Number.isFinite(initialCharCounter)
+    ? Math.min(3, Math.max(0, Math.trunc(initialCharCounter)))
+    : 1;
   let charGuaranteed = targets.isCharGuaranteed || false; 
   let weaponGuaranteed = false; 
   let fatePoint = 0;
