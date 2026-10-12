@@ -689,7 +689,7 @@ export function CitlaliInterface({ theme, onBackgroundChange }: { theme: Simulat
                   <CardTitle className="flex justify-between items-end">
                     <span>抽卡消耗分布图</span>
                     <span className="text-sm font-normal text-zinc-500">
-                      最欧: <b className="text-[#FFB7C5]">{report.pulls[0]}抽</b> ｜ 最非: <b className="text-orange-500">{report.pulls[report.pulls.length-1]}抽</b>
+                      样本最小抽数: <b className="text-[#FFB7C5]">{report.pulls[0]}抽</b> ｜ 样本最大抽数: <b className="text-orange-500">{report.pulls[report.pulls.length-1]}抽</b>
                     </span>
                   </CardTitle>
                 </CardHeader>
@@ -717,13 +717,13 @@ export function CitlaliInterface({ theme, onBackgroundChange }: { theme: Simulat
 
               <div className="grid md:grid-cols-2 gap-6 motion-enter" style={{ "--motion-i": 2 } as React.CSSProperties}>
                 <Card className="shadow-lg border-white/50 bg-white/85 dark:bg-zinc-950/85 backdrop-blur-md">
-                  <CardHeader><CardTitle>累积概率分布</CardTitle></CardHeader>
+                  <CardHeader><CardTitle>抽数分位点</CardTitle></CardHeader>
                   <CardContent>
                     <Table className="bg-white/40 rounded-md overflow-hidden">
                       <TableHeader><TableRow><TableHead>消耗抽数</TableHead><TableHead>累积成功率</TableHead></TableRow></TableHeader>
                       <TableBody>
                         <TableRow className="bg-[#fff0f5]/80 font-bold text-[#FFB7C5]">
-                          <TableCell>{report.pulls[0]} 抽</TableCell><TableCell>天选之子记录</TableCell>
+                          <TableCell>{report.pulls[0]} 抽</TableCell><TableCell>样本最小抽数</TableCell>
                         </TableRow>
                         {[0.1, 0.3, 0.5, 0.7, 0.9, 0.99].map(p => (
                           <TableRow key={p}>
@@ -732,7 +732,7 @@ export function CitlaliInterface({ theme, onBackgroundChange }: { theme: Simulat
                           </TableRow>
                         ))}
                         <TableRow className="bg-[#fff0f5]/80 font-bold text-[#FFB7C5]">
-                          <TableCell>{report.pulls[report.pulls.length - 1]} 抽</TableCell><TableCell>最非保底记录</TableCell>
+                          <TableCell>{report.pulls[report.pulls.length - 1]} 抽</TableCell><TableCell>样本最大抽数</TableCell>
                         </TableRow>
                       </TableBody>
                     </Table>
@@ -748,7 +748,7 @@ export function CitlaliInterface({ theme, onBackgroundChange }: { theme: Simulat
                     <div className="h-px bg-zinc-300 dark:bg-zinc-700 my-4" />
                     <p>平均星辉返还: {report.avgDust.toFixed(1)}</p>
                     <p>平均粉球返还: {report.avgBallsBack} 抽 (约计)</p>
-                    <p className="text-lg pt-3">实际净消耗期望: <br/><span className="text-[#FFB7C5] font-bold text-2xl">{report.netCost.toFixed(1)} 抽</span></p>
+                    <p className="text-lg pt-3">平均净消耗(近似): <br/><span className="text-[#FFB7C5] font-bold text-2xl">{report.netCost.toFixed(1)} 抽</span></p>
                     <p className="pt-2 text-zinc-600">
                       目标: {targets.charA > 0 && <span className={isFeaturedCharacter(names.cA) ? `${CITLALI_TEXT_COLOR} font-bold` : ''}>{names.cA} </span>}
                       {targets.charB > 0 && <span className={isFeaturedCharacter(names.cB) ? `${CITLALI_TEXT_COLOR} font-bold` : ''}>{names.cB} </span>}
