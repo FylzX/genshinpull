@@ -56,7 +56,7 @@ function AnimatedPercentage({ value }: { value: number }) {
   useEffect(() => {
     let startTimestamp: number | null = null;
     let animationFrameId: number;
-    // 👈 动画持续时间设定为 800m
+    // 动画持续时间设定为 800ms
     const duration = 800; 
 
     const step = (timestamp: number) => {
@@ -542,7 +542,7 @@ export function CitlaliInterface({ theme, currentBackground, onBackgroundChange 
             <div key={report.runId} ref={resultRef} className="space-y-6">
               <div className="motion-enter motion-burst text-center py-6 bg-white/70 dark:bg-black/50 backdrop-blur-sm rounded-2xl shadow-sm mx-auto max-w-sm" style={{ "--motion-i": 0 } as React.CSSProperties}>
                 
-                {/* 👇 这里把原来的固定数字，换成了刚刚写的动画组件 */}
+                {/* 使用动画组件展示成功率 */}
                 <h2 className={`text-6xl font-black tracking-tighter ${report.prob > 0.5 ? 'text-green-500' : 'text-orange-500'} drop-shadow-md`}>
                   <AnimatedPercentage value={report.prob * 100} />
                 </h2>

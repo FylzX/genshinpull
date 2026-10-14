@@ -38,7 +38,7 @@ export function runOneSimLogic(targets: SimulationTargets): SimResult {
   };
 
   // ---------------- 角色池逻辑 ----------------
-  let charPurplePity = 0; // 👈 新增：角色池的 4 星垫抽水位
+  let charPurplePity = 0; // 角色池的 4 星计数
 
   const charKeys = ['cA', 'cB'] as const;
   for (const key of charKeys) {
@@ -48,7 +48,7 @@ export function runOneSimLogic(targets: SimulationTargets): SimResult {
       currentCharPity = 0; 
 
       while (true) {
-        totalPulls++; pGold++; charPurplePity++; // 👈 五星和四星的水位同时+1
+        totalPulls++; pGold++; charPurplePity++; // 五星和四星计数同步累加
         
         // 【1. 先判定是否出 5 星】
         const prob = 0.006 + Math.max(0, pGold - 73) * 0.06;
@@ -95,7 +95,7 @@ export function runOneSimLogic(targets: SimulationTargets): SimResult {
 
           if (Math.random() < prob4) {
             charPurplePity = 0; // 👈 抽中 4 星，水位清零
-            // 一半概率是满命4星给5个星辉，一半概率是武器/非满命给2个星辉
+            // 以相同概率返还 5 或 2 星辉，不模拟具体四星物品或已有命座
             stardust += (Math.random() < 0.5) ? 5 : 2; 
           }
         }
@@ -105,7 +105,7 @@ export function runOneSimLogic(targets: SimulationTargets): SimResult {
 
   // ---------------- 武器池逻辑 ----------------
   let currentFocus: 'wA' | 'wB' = 'wA';
-  let weapPurplePity = 0; // 👈 新增：武器池的 4 星垫抽水位
+  let weapPurplePity = 0; // 武器池的 4 星计数
 
   while (inv['wA'] < targets.weapA || inv['wB'] < targets.weapB) {
     if (inv['wA'] >= targets.weapA && currentFocus === "wA") { currentFocus = "wB"; fatePoint = 0; }
@@ -114,7 +114,7 @@ export function runOneSimLogic(targets: SimulationTargets): SimResult {
     currentWeapPity = 0; 
 
     while (true) {
-      totalPulls++; pGold++; weapPurplePity++; // 👈 五星和四星的水位同时+1
+      totalPulls++; pGold++; weapPurplePity++; // 五星和四星计数同步累加
       
       // 【1. 先判定是否出 5 星】
       const prob = 0.007 + Math.max(0, pGold - 62) * 0.07;
@@ -158,7 +158,7 @@ export function runOneSimLogic(targets: SimulationTargets): SimResult {
 
         if (Math.random() < prob4) {
           weapPurplePity = 0; // 👈 抽中 4 星，水位清零
-          // 武器池的 4 星返还逻辑，同样算作平均分配
+          // 武器池四星也以相同概率返还 5 或 2 星辉，不模拟具体物品
           stardust += (Math.random() < 0.5) ? 5 : 2; 
         }
       }
