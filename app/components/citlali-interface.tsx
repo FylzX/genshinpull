@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -10,27 +9,18 @@ import { runSimulation } from "@/lib/simulator"
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
 
 import avatarData from "../avatar.json"
-import bgData from "../background.json"
 import characterElements from "../character-elements.json"
 import { CalculateButton } from "./calculate-button"
 import { CapturingRadianceInput } from "./capturing-radiance-input"
 import { NumberInput } from "./number-input"
-import { SimulatorBackground } from "./simulator-background"
 import { SimulatorFloatingControls } from "./simulator-floating-controls"
 import { SimulatorHeader } from "./simulator-header"
-import { ODETTE_THEME } from "./odette-theme"
-import type { SimulatorTheme } from "./theme-types"
+import { themeConfig } from "./theme-config"
+import type { SimulatorThemeProps } from "./theme-types"
 import { useSimulatorState } from "./simulator-state"
 
-// ==========================================
-// 🎨 单独拆出来的【茜特菈莉】名字颜色配置
-// ==========================================
-const CITLALI_TEXT_COLOR = "text-[#FFB7C5]"; 
-// 悬浮在纯粉色背景上时的文字颜色(防止粉底粉字看不清)
-const CITLALI_HOVER_TEXT_COLOR = "group-hover:text-white"; 
-
-const isCitlali = (name: string) => name === "茜特菈莉";
-const isPinkWeapon = (name: string) => name === "祭星者之望";
+const THEME_ACCENT_TEXT = "text-theme-accent"
+const THEME_ACCENT_HOVER_TEXT = "group-hover:text-theme-hover-foreground"
 
 const CHAR_LIST = avatarData.map(item => item.zh);
 const ELEMENT_BADGE_SIZE = "w-8 h-8";
@@ -96,16 +86,11 @@ function AnimatedPercentage({ value }: { value: number }) {
 }
 
 
-export function CitlaliInterface({ theme, onBackgroundChange }: { theme: SimulatorTheme; onBackgroundChange: (background: string) => void }) {
-  const [bgLayers, setBgLayers] = useState({ img1: "", img2: "" });
-  const [activeLayer, setActiveLayer] = useState<1 | 2>(1);
-  const [validImages, setValidImages] = useState<string[]>([]);
+export function CitlaliInterface({ theme, currentBackground, onBackgroundChange }: SimulatorThemeProps) {
+  const appearance = themeConfig[theme]
+  const initializedBackgroundThemes = useRef(new Set<SimulatorThemeProps["theme"]>())
   
-  const [bgVideo, setBgVideo] = useState("");
-  const [showVideo, setShowVideo] = useState(false); 
-  const [isVideoSupported, setIsVideoSupported] = useState(true); 
   const [showScrollTop, setShowScrollTop] = useState(false);
-  const videoRef = useRef<HTMLVideoElement>(null);
   const resultRef = useRef<HTMLDivElement>(null);
 
   const {
@@ -115,10 +100,9 @@ export function CitlaliInterface({ theme, onBackgroundChange }: { theme: Simulat
   } = useSimulatorState();
 
   useEffect(() => {
-    let isMounted = true;
-
-    const discovered = bgData[theme].images || [];
-    const imagePool = discovered;
+    const imagePool = appearance.backgroundImages;
+    if (currentBackground || imagePool.length === 0 || initializedBackgroundThemes.current.has(theme)) return;
+    initializedBackgroundThemes.current.add(theme)
 
     const getRecentImages = () => {
       try {
@@ -137,23 +121,11 @@ export function CitlaliInterface({ theme, onBackgroundChange }: { theme: Simulat
     };
     
     if (imagePool.length > 0) {
-      setValidImages(imagePool);
       const recentImages = getRecentImages();
       const candidates = imagePool.filter(img => !recentImages.includes(img));
       const initialImg = pickWeightedImage(candidates.length > 0 ? candidates : imagePool);
       rememberImage(initialImg);
       onBackgroundChange(initialImg);
-
-      if (!bgLayers.img1 && !bgLayers.img2) {
-        setBgLayers({ img1: initialImg, img2: "" });
-        setActiveLayer(1);
-      } else if (activeLayer === 1) {
-        setBgLayers(prev => ({ ...prev, img2: initialImg }));
-        setActiveLayer(2);
-      } else {
-        setBgLayers(prev => ({ ...prev, img1: initialImg }));
-        setActiveLayer(1);
-      }
 
       imagePool.forEach(src => {
         const img = new Image();
@@ -161,34 +133,7 @@ export function CitlaliInterface({ theme, onBackgroundChange }: { theme: Simulat
       });
     }
 
-    setTimeout(() => {
-      if (!isMounted) return;
-      const videos: string[] = [];
-      if (videos.length === 0) return;
-
-      let newVidIndex = 0;
-      try {
-        const lastVidIndex = localStorage.getItem('lastBgVidIndex');
-        const validVidIndices = videos.map((_, i) => i).filter(i => i.toString() !== lastVidIndex);
-        newVidIndex = validVidIndices.length > 0 
-          ? validVidIndices[Math.floor(Math.random() * validVidIndices.length)] 
-          : 0;
-        localStorage.setItem('lastBgVidIndex', newVidIndex.toString());
-      } catch (error) {}
-
-      setBgVideo(videos[newVidIndex]);
-    }, 800);
-
-    return () => { isMounted = false; };
-  }, [theme]);
-
-  useEffect(() => {
-    if (theme === "odette") {
-      setNames(prev => ({ ...prev, ...ODETTE_THEME.defaults }));
-    } else {
-      setNames(prev => ({ ...prev, cA: "茜特菈莉", cB: "奥黛塔", wA: "祭星者之望", wB: "白湖冬羽" }));
-    }
-  }, [theme]);
+  }, [appearance.backgroundImages, currentBackground, onBackgroundChange, theme]);
 
   useEffect(() => {
     const el = resultRef.current;
@@ -212,18 +157,19 @@ export function CitlaliInterface({ theme, onBackgroundChange }: { theme: Simulat
   }, []);
 
   const handleNextImage = () => {
-    if (validImages.length <= 1) return; 
+    const imagePool = appearance.backgroundImages;
+    if (imagePool.length <= 1) return;
     
-    const currentImg = activeLayer === 1 ? bgLayers.img1 : bgLayers.img2;
+    const currentImg = currentBackground;
     let recentImages: string[] = [];
     try {
       const stored = JSON.parse(localStorage.getItem('recentBgImgs') || '[]');
       recentImages = Array.isArray(stored) ? stored.filter((img): img is string => typeof img === 'string') : [];
     } catch (e) {}
     const excludedImages = Array.from(new Set([currentImg, ...recentImages]));
-    let candidates = validImages.filter(img => !excludedImages.includes(img));
+    let candidates = imagePool.filter(img => !excludedImages.includes(img));
     if (candidates.length === 0) {
-      candidates = validImages.filter(img => img !== currentImg);
+      candidates = imagePool.filter(img => img !== currentImg);
     }
     const nextImg = pickWeightedImage(candidates);
     onBackgroundChange(nextImg);
@@ -232,32 +178,11 @@ export function CitlaliInterface({ theme, onBackgroundChange }: { theme: Simulat
       const recent = [nextImg, ...recentImages.filter(img => img !== nextImg)].slice(0, 3);
       localStorage.setItem('recentBgImgs', JSON.stringify(recent));
     } catch (e) {}
-
-    if (activeLayer === 1) {
-      setBgLayers(prev => ({ ...prev, img2: nextImg }));
-      setActiveLayer(2);
-    } else {
-      setBgLayers(prev => ({ ...prev, img1: nextImg }));
-      setActiveLayer(1);
-    }
   };
 
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
-
-  useEffect(() => {
-    if (showVideo && videoRef.current && bgVideo) {
-      const playPromise = videoRef.current.play();
-      if (playPromise !== undefined) {
-        playPromise.catch((error) => {
-          console.warn("浏览器阻止了视频自动播放，降级为图片背景", error);
-          setIsVideoSupported(false);
-          setShowVideo(false);
-        });
-      }
-    }
-  }, [showVideo, bgVideo]);
 
   const startSim = async () => {
     if (fates < 0 || primos < 0) {
@@ -351,7 +276,7 @@ export function CitlaliInterface({ theme, onBackgroundChange }: { theme: Simulat
       return (
         <div className="bg-white/95 dark:bg-zinc-900 border shadow-xl p-3 rounded-md">
           <p className="font-bold text-zinc-700 dark:text-zinc-200">{payload[0].payload.范围}</p>
-          <p className="text-[#FFB7C5] font-black text-lg">落入人数: {payload[0].value.toLocaleString()} 次</p>
+          <p className="text-theme-accent font-black text-lg">落入人数: {payload[0].value.toLocaleString()} 次</p>
           <p className="text-sm text-zinc-500">占比: {(payload[0].value / simCount * 100).toFixed(2)}%</p>
         </div>
       );
@@ -369,79 +294,20 @@ export function CitlaliInterface({ theme, onBackgroundChange }: { theme: Simulat
     actualTotalPullsDisplay = effectiveFates + actualReturn;
   }
 
-  const isFeaturedCharacter = (name: string) => theme === "odette" ? name === ODETTE_THEME.featuredCharacter : isCitlali(name);
-  const isFeaturedWeapon = (name: string) => theme === "odette" ? name === ODETTE_THEME.featuredWeapon : isPinkWeapon(name);
+  const isFeaturedCharacter = (name: string) => name === appearance.featuredCharacter;
+  const isFeaturedWeapon = (name: string) => name === appearance.featuredWeapon;
   return (
     <div className="theme-transition">
-      {false && <SimulatorBackground
-        img1={bgLayers.img1}
-        img2={bgLayers.img2}
-        activeLayer={activeLayer}
-        showVideo={showVideo}
-        bgVideo={bgVideo}
-        isVideoSupported={isVideoSupported}
-        videoRef={videoRef}
-        onVideoError={() => {
-          console.warn("瑙嗛鍔犺浇澶辫触锛岄檷绾т负鍥剧墖鑳屾櫙");
-          setIsVideoSupported(false);
-          setShowVideo(false);
-        }}
-      />}
-      {false && <div className="fixed inset-0 -z-10 bg-zinc-900 overflow-hidden">
-        <div 
-          className={`absolute inset-0 bg-cover bg-center bg-no-repeat transition-opacity duration-1000 ease-in-out ${
-            (!showVideo && activeLayer === 1) ? 'opacity-100' : 'opacity-0'
-          }`}
-          style={{ backgroundImage: bgLayers.img1 ? `url(${bgLayers.img1})` : 'none' }}
-        />
-        <div 
-          className={`absolute inset-0 bg-cover bg-center bg-no-repeat transition-opacity duration-1000 ease-in-out ${
-            (!showVideo && activeLayer === 2) ? 'opacity-100' : 'opacity-0'
-          }`}
-          style={{ backgroundImage: bgLayers.img2 ? `url(${bgLayers.img2})` : 'none' }}
-        />
-
-        {bgVideo && isVideoSupported && (
-          <video
-            ref={videoRef}
-            src={bgVideo}
-            autoPlay loop muted playsInline
-            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ease-in-out ${
-              showVideo ? 'opacity-100' : 'opacity-0'
-            }`}
-            onError={() => {
-              console.warn("视频加载失败，降级为图片背景");
-              setIsVideoSupported(false);
-              setShowVideo(false);
-            }}
-          />
-        )}
-      </div>}
-
       <div className="min-h-screen p-4 md:p-8 relative">
         <div className="max-w-6xl mx-auto space-y-6">
           
           <SimulatorHeader
             title="原神抽卡概率计算器"
             githubLabel="Github项目地址"
-            readmeLabel="[点这里]奶奶给你准备的使用说明"
-            readmeHref={theme === "odette" ? ODETTE_THEME.readmeHref : "/readme_citlali.html"}
-            probHref={theme === "odette" ? "/prob_odette.html" : "/prob_citlali.html"}
+            readmeLabel={appearance.readmeLabel}
+            readmeHref={appearance.readmeHref}
+            probHref={appearance.probabilityHref}
           />
-          {false && <div className="text-center mb-8 space-y-2 bg-white/70 dark:bg-black/50 backdrop-blur-sm p-4 rounded-2xl shadow-sm inline-block mx-auto flex flex-col items-center">
-            <h1 className="text-3xl font-bold tracking-tight">原神抽卡概率计算器</h1>
-            <div className="flex flex-col items-center gap-1">
-              <a href="https://github.com/FylzX/genshinpull" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-sm font-medium text-zinc-600 hover:text-[#FFB7C5] transition-colors duration-300">
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-                  <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
-                </svg> Github项目地址
-              </a>
-              <a href="/readme.html" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-sm font-medium text-zinc-600 hover:text-[#FFB7C5] transition-colors duration-300">
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg> [点这里]奶奶给你准备的使用说明
-              </a>
-            </div>
-          </div>}
-
           <Card className="shadow-lg border-white/50 bg-white/85 dark:bg-zinc-950/85 backdrop-blur-md motion-enter" style={{ "--motion-i": 1 } as React.CSSProperties}>
             <CardHeader><CardTitle>设定目标与卡池状态</CardTitle></CardHeader>
             <CardContent className="flex flex-col gap-6">
@@ -463,7 +329,7 @@ export function CitlaliInterface({ theme, onBackgroundChange }: { theme: Simulat
                       id={`${theme}-use-starglitter`} 
                       checked={useStarglitter}
                       onChange={(e) => setUseStarglitter(e.target.checked)}
-                      className="simulator-checkbox w-5 h-5 accent-[#FFB7C5] cursor-pointer rounded-sm"
+                      className="simulator-checkbox w-5 h-5 accent-theme-accent cursor-pointer rounded-sm"
                     />
                     <Label htmlFor={`${theme}-use-starglitter`} className="cursor-pointer font-bold text-zinc-700 dark:text-zinc-300 select-none">
                       算上返还星辉(近似)
@@ -476,20 +342,20 @@ export function CitlaliInterface({ theme, onBackgroundChange }: { theme: Simulat
                 <div className={`grid transition-[grid-template-rows] duration-500 ease-in-out ${useStarglitter ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
                   <div className="overflow-hidden">
                     <div className="pt-4">
-                      <div className="text-zinc-900 dark:text-zinc-100 text-sm font-medium bg-[#fff0f5]/50 dark:bg-[#2a1a20]/50 px-5 py-3 rounded-xl border border-[#FFB7C5]/30 w-max shadow-sm">
-                        <span className="text-[#FFB7C5] font-black text-lg pr-1">{effectiveFates}</span> 有效抽数 
+                      <div className="text-zinc-900 dark:text-zinc-100 text-sm font-medium bg-theme-surface/50 dark:bg-theme-surface-dark px-5 py-3 rounded-xl border border-theme-accent/30 w-max shadow-sm">
+                        <span className="text-theme-accent font-black text-lg pr-1">{effectiveFates}</span> 有效抽数
                         <span className="ml-2 pr-1">预计返还</span> 
                         {report ? (
                           <>
-                            <span className="text-[#FFB7C5] font-black text-lg px-1">{actualReturnPullsDisplay}</span> 抽
+                            <span className="text-theme-accent font-black text-lg px-1">{actualReturnPullsDisplay}</span> 抽
                             <span className="ml-2 pr-1">共</span>
-                            <span className="text-[#FFB7C5] font-black text-lg px-1">{actualTotalPullsDisplay}</span> 抽
+                            <span className="text-theme-accent font-black text-lg px-1">{actualTotalPullsDisplay}</span> 抽
                           </>
                         ) : (
                           <>
-                            <span className="text-[#FFB7C5] font-bold px-1">{actualReturnPullsDisplay}</span>
+                            <span className="text-theme-accent font-bold px-1">{actualReturnPullsDisplay}</span>
                             <span className="ml-2 pr-1">共</span>
-                            <span className="text-[#FFB7C5] font-bold px-1">{actualTotalPullsDisplay}</span>
+                            <span className="text-theme-accent font-bold px-1">{actualTotalPullsDisplay}</span>
                           </>
                         )}
                       </div>
@@ -498,7 +364,7 @@ export function CitlaliInterface({ theme, onBackgroundChange }: { theme: Simulat
                 </div>
               </div>
 
-              <div className="flex flex-wrap items-center gap-x-6 gap-y-3 md:gap-6 p-4 rounded-xl bg-[#fff0f5]/50 dark:bg-[#2a1a20]/50 border border-[#FFB7C5]/30">
+              <div className="flex flex-wrap items-center gap-x-6 gap-y-3 md:gap-6 p-4 rounded-xl bg-theme-surface/50 dark:bg-theme-surface-dark border border-theme-accent/30">
                 <div className="flex items-center gap-3">
                   <Label className="font-semibold text-zinc-700 dark:text-zinc-300">角色池已垫:</Label>
                   <div className="relative">
@@ -531,15 +397,15 @@ export function CitlaliInterface({ theme, onBackgroundChange }: { theme: Simulat
                   onValueChange={value => setTargets(previous => ({ ...previous, initialCharCounter: value }))}
                 />
 
-                <div className="flex items-center space-x-2 md:pl-4 md:border-l border-[#FFB7C5]/40">
+                <div className="flex items-center space-x-2 md:pl-4 md:border-l border-theme-accent/40">
                   <input 
                     type="checkbox" 
                     id={`${theme}-char-guaranteed`} 
                     checked={targets.isCharGuaranteed}
                     onChange={(e) => setTargets({...targets, isCharGuaranteed: e.target.checked})}
-                    className="simulator-checkbox w-5 h-5 accent-[#FFB7C5] cursor-pointer rounded-sm"
+                    className="simulator-checkbox w-5 h-5 accent-theme-accent cursor-pointer rounded-sm"
                   />
-                  <Label htmlFor={`${theme}-char-guaranteed`} className="cursor-pointer font-bold text-[#FFB7C5] select-none">
+                  <Label htmlFor={`${theme}-char-guaranteed`} className="cursor-pointer font-bold text-theme-accent select-none">
                     下一个角色必定UP (大保底)
                   </Label>
                 </div>
@@ -562,8 +428,8 @@ export function CitlaliInterface({ theme, onBackgroundChange }: { theme: Simulat
                           ${item.isChar
                             ? '!h-[60px] w-full md:!w-[210px] rounded-xl [&>span]:!line-clamp-none [&>span]:flex [&>span]:items-center [&>span]:flex-1 [&>span]:min-w-0'
                             : 'max-md:!h-11 h-10 w-full md:w-[160px]'}
-                          ${isFeaturedCharacter((names as any)[item.key]) && item.isChar ? `theme-featured-character border-[#FFB7C5] ring-2 ring-[#FFB7C5]/30` : ''}
-                          ${isFeaturedWeapon((names as any)[item.key]) && !item.isChar ? 'text-[#FFB7C5] font-bold border-[#FFB7C5]' : ''}
+                          ${isFeaturedCharacter((names as any)[item.key]) && item.isChar ? `theme-featured-character border-theme-accent ring-2 ring-theme-accent/30` : ''}
+                          ${isFeaturedWeapon((names as any)[item.key]) && !item.isChar ? 'text-theme-accent font-bold border-theme-accent' : ''}
                         `}>
                           <SelectValue />
                         </SelectTrigger>
@@ -580,7 +446,7 @@ export function CitlaliInterface({ theme, onBackgroundChange }: { theme: Simulat
                                 const charInfo = avatarData.find(a => a.zh === name);
                                 const element = charInfo?.en ? getCharacterElement(charInfo.en) : undefined;
                                 const elementColor = element ? ELEMENT_COLORS[element] : undefined;
-                                const citlali = isFeaturedCharacter(name);
+                                const featured = isFeaturedCharacter(name);
                                 return (
                                   <SelectItem 
                                     key={name} 
@@ -589,8 +455,8 @@ export function CitlaliInterface({ theme, onBackgroundChange }: { theme: Simulat
                                     className={`
                                       motion-pop group relative !p-[6px] rounded-xl cursor-pointer transition-all duration-300 [&>span:last-child]:w-full
                                       [&>span.absolute]:hidden
-                                      ${citlali 
-                                        ? 'theme-featured-character bg-[#FFB7C5]/30 hover:bg-[#FFB7C5] border-2 border-[#FFB7C5]' 
+                                      ${featured
+                                        ? 'theme-featured-character bg-theme-accent/30 hover:bg-theme-hover-surface border-2 border-theme-accent'
                                         : 'bg-white/40 dark:bg-zinc-800/40 hover:bg-white dark:hover:bg-zinc-700 border border-white/50'}
                                     `}
                                   >
@@ -603,7 +469,7 @@ export function CitlaliInterface({ theme, onBackgroundChange }: { theme: Simulat
                                           <div className="w-full h-full bg-zinc-300 dark:bg-zinc-700" />
                                         )}
                                       </div>
-                                      <span className={`text-sm sm:text-[15px] text-left font-bold block whitespace-nowrap truncate flex-1 min-w-0 ${citlali ? `${CITLALI_TEXT_COLOR} ${CITLALI_HOVER_TEXT_COLOR}` : 'text-zinc-800 dark:text-zinc-200'}`}>
+                                      <span className={`text-sm sm:text-[15px] text-left font-bold block whitespace-nowrap truncate flex-1 min-w-0 ${featured ? `${THEME_ACCENT_TEXT} ${THEME_ACCENT_HOVER_TEXT}` : 'text-zinc-800 dark:text-zinc-200'}`}>
                                         {name}
                                       </span>
                                       {element && (
@@ -629,7 +495,7 @@ export function CitlaliInterface({ theme, onBackgroundChange }: { theme: Simulat
                                 )
                               } else {
                                 return (
-                                  <SelectItem key={name} value={name} className={isFeaturedWeapon(name) ? 'text-[#FFB7C5] font-bold bg-[#FFB7C5]/20' : ''}>
+                                  <SelectItem key={name} value={name} className={isFeaturedWeapon(name) ? 'text-theme-accent font-bold bg-theme-accent/20' : ''}>
                                     {name}
                                   </SelectItem>
                                 )
@@ -658,7 +524,7 @@ export function CitlaliInterface({ theme, onBackgroundChange }: { theme: Simulat
             <div ref={resultRef} className="space-y-6 animate-in fade-in zoom-in-95 duration-500">
               <div className="text-center py-6 bg-white/70 dark:bg-black/50 backdrop-blur-sm rounded-2xl shadow-sm mx-auto max-w-xl">
                 <h2 className="text-2xl font-black text-orange-500 drop-shadow-md">
-                  怎么,负债累累还想来抽卡?<br />奶奶我可没时间陪你在这里浪费, 哼!
+                  {appearance.messages.negativeResources.title}<br />{appearance.messages.negativeResources.detail}
                 </h2>
                 <p className="text-zinc-600 font-bold mt-2">预计成功率</p>
               </div>
@@ -667,7 +533,7 @@ export function CitlaliInterface({ theme, onBackgroundChange }: { theme: Simulat
             <div ref={resultRef} className="space-y-6 animate-in fade-in zoom-in-95 duration-500">
               <div className="text-center py-6 bg-white/70 dark:bg-black/50 backdrop-blur-sm rounded-2xl shadow-sm mx-auto max-w-xl">
                 <h2 className="text-2xl font-black text-orange-500 drop-shadow-md">
-                  怎么, 谁都不想抽?<br />奶奶我可没时间陪你在这里浪费, 哼!
+                  {appearance.messages.emptyTargets.title}<br />{appearance.messages.emptyTargets.detail}
                 </h2>
                 <p className="text-zinc-600 font-bold mt-2">预计成功率</p>
               </div>
@@ -689,7 +555,7 @@ export function CitlaliInterface({ theme, onBackgroundChange }: { theme: Simulat
                   <CardTitle className="flex justify-between items-end">
                     <span>抽卡消耗分布图</span>
                     <span className="text-sm font-normal text-zinc-500">
-                      样本最小抽数: <b className="text-[#FFB7C5]">{report.pulls[0]}抽</b> ｜ 样本最大抽数: <b className="text-orange-500">{report.pulls[report.pulls.length-1]}抽</b>
+                      样本最小抽数: <b className="text-theme-accent">{report.pulls[0]}抽</b> ｜ 样本最大抽数: <b className="text-orange-500">{report.pulls[report.pulls.length-1]}抽</b>
                     </span>
                   </CardTitle>
                 </CardHeader>
@@ -699,15 +565,15 @@ export function CitlaliInterface({ theme, onBackgroundChange }: { theme: Simulat
                       <BarChart data={report.trimmedHistData} margin={{ top: 5, right: 20, left: 0, bottom: 20 }}>
                         <defs>
                           <linearGradient id={`${theme}-clash`} x1="1" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor={theme === "odette" ? "#92e7ef" : "#f1aec9"} stopOpacity={0.95} />
-                            <stop offset="40%" stopColor="#fcccee" stopOpacity={0.95} />
-                            <stop offset="100%" stopColor={theme === "odette" ? "#f1aec9" : "#92e7ef"} stopOpacity={0.95} />
+                            <stop offset="0%" stopColor={appearance.colors.chartStart} stopOpacity={0.95} />
+                            <stop offset="40%" stopColor={appearance.colors.chartMiddle} stopOpacity={0.95} />
+                            <stop offset="100%" stopColor={appearance.colors.chartEnd} stopOpacity={0.95} />
                           </linearGradient>
                         </defs>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#cbd5e1" />
                         <XAxis dataKey="name" tick={{fontSize: 12, fill: '#475569'}} angle={-35} textAnchor="end" />
                         <YAxis tick={{fontSize: 12, fill: '#475569'}} />
-                        <Tooltip content={<CustomTooltip />} cursor={{fill: '#FFB7C5', opacity: 0.15}} />
+                        <Tooltip content={<CustomTooltip />} cursor={{fill: appearance.colors.chartCursor, opacity: 0.15}} />
                         <Bar dataKey="发生次数" fill={`url(#${theme}-clash)`} radius={[4, 4, 0, 0]} isAnimationActive={true} animationDuration={1000} />
                       </BarChart>
                     </ResponsiveContainer>
@@ -722,7 +588,7 @@ export function CitlaliInterface({ theme, onBackgroundChange }: { theme: Simulat
                     <Table className="bg-white/40 rounded-md overflow-hidden">
                       <TableHeader><TableRow><TableHead>消耗抽数</TableHead><TableHead>累积成功率</TableHead></TableRow></TableHeader>
                       <TableBody>
-                        <TableRow className="bg-[#fff0f5]/80 font-bold text-[#FFB7C5]">
+                        <TableRow className="bg-theme-surface/80 font-bold text-theme-accent">
                           <TableCell>{report.pulls[0]} 抽</TableCell><TableCell>样本最小抽数</TableCell>
                         </TableRow>
                         {[0.1, 0.3, 0.5, 0.7, 0.9, 0.99].map(p => (
@@ -731,7 +597,7 @@ export function CitlaliInterface({ theme, onBackgroundChange }: { theme: Simulat
                             <TableCell>前 {p * 100}% 水平</TableCell>
                           </TableRow>
                         ))}
-                        <TableRow className="bg-[#fff0f5]/80 font-bold text-[#FFB7C5]">
+                        <TableRow className="bg-theme-surface/80 font-bold text-theme-accent">
                           <TableCell>{report.pulls[report.pulls.length - 1]} 抽</TableCell><TableCell>样本最大抽数</TableCell>
                         </TableRow>
                       </TableBody>
@@ -742,18 +608,18 @@ export function CitlaliInterface({ theme, onBackgroundChange }: { theme: Simulat
                 <Card className="shadow-lg border-white/50 bg-white/85 dark:bg-zinc-950/85 backdrop-blur-md">
                   <CardHeader><CardTitle>期望报告</CardTitle></CardHeader>
                   <CardContent className="bg-zinc-100/50 dark:bg-zinc-900/50 rounded-lg p-6 font-mono text-sm space-y-3 leading-relaxed border border-zinc-200/50">
-                    <p>模拟平均总消耗: <span className="text-[#FFB7C5] font-bold text-base">{report.avgPulls.toFixed(1)} 抽</span></p>
+                    <p>模拟平均总消耗: <span className="text-theme-accent font-bold text-base">{report.avgPulls.toFixed(1)} 抽</span></p>
                     <p>白板理论总期望: {report.theoryAvg.toFixed(1)} 抽 <span className="text-xs text-zinc-500">(0垫0保底对比参考)</span></p>
                     <p>每金平均成本: {(report.avgPulls / Math.max(1, (targets.charA+targets.charB+targets.weapA+targets.weapB))).toFixed(1)} 抽</p>
                     <div className="h-px bg-zinc-300 dark:bg-zinc-700 my-4" />
                     <p>平均星辉返还: {report.avgDust.toFixed(1)}</p>
                     <p>平均粉球返还: {report.avgBallsBack} 抽 (约计)</p>
-                    <p className="text-lg pt-3">平均净消耗(近似): <br/><span className="text-[#FFB7C5] font-bold text-2xl">{report.netCost.toFixed(1)} 抽</span></p>
+                    <p className="text-lg pt-3">平均净消耗(近似): <br/><span className="text-theme-accent font-bold text-2xl">{report.netCost.toFixed(1)} 抽</span></p>
                     <p className="pt-2 text-zinc-600">
-                      目标: {targets.charA > 0 && <span className={isFeaturedCharacter(names.cA) ? `${CITLALI_TEXT_COLOR} font-bold` : ''}>{names.cA} </span>}
-                      {targets.charB > 0 && <span className={isFeaturedCharacter(names.cB) ? `${CITLALI_TEXT_COLOR} font-bold` : ''}>{names.cB} </span>}
-                      {targets.weapA > 0 && <span className={isFeaturedWeapon(names.wA) ? 'text-[#FFB7C5] font-bold' : ''}>{names.wA} </span>}
-                      {targets.weapB > 0 && <span className={isFeaturedWeapon(names.wB) ? 'text-[#FFB7C5] font-bold' : ''}>{names.wB} </span>}
+                      目标: {targets.charA > 0 && <span className={isFeaturedCharacter(names.cA) ? `${THEME_ACCENT_TEXT} font-bold` : ''}>{names.cA} </span>}
+                      {targets.charB > 0 && <span className={isFeaturedCharacter(names.cB) ? `${THEME_ACCENT_TEXT} font-bold` : ''}>{names.cB} </span>}
+                      {targets.weapA > 0 && <span className={isFeaturedWeapon(names.wA) ? 'text-theme-accent font-bold' : ''}>{names.wA} </span>}
+                      {targets.weapB > 0 && <span className={isFeaturedWeapon(names.wB) ? 'text-theme-accent font-bold' : ''}>{names.wB} </span>}
                     </p>
                   </CardContent>
                 </Card>
@@ -770,8 +636,8 @@ export function CitlaliInterface({ theme, onBackgroundChange }: { theme: Simulat
                       const realName = (names as any)[k];
                       const isWeap = k.startsWith('w');
                       const highlightClass = isWeap 
-                        ? (isFeaturedWeapon(realName) ? 'text-[#FFB7C5] font-bold' : '')
-                        : (isFeaturedCharacter(realName) ? `${CITLALI_TEXT_COLOR} font-bold` : '');
+                        ? (isFeaturedWeapon(realName) ? 'text-theme-accent font-bold' : '')
+                        : (isFeaturedCharacter(realName) ? `${THEME_ACCENT_TEXT} font-bold` : '');
 
                       return (
                         <span key={k}>
@@ -796,13 +662,13 @@ export function CitlaliInterface({ theme, onBackgroundChange }: { theme: Simulat
           <Card className="shadow-lg border-white/50 bg-white/85 dark:bg-zinc-950/85 backdrop-blur-md mt-8 motion-enter" style={{ "--motion-i": 2 } as React.CSSProperties}>
             <CardContent className="p-6 flex flex-col items-center justify-center space-y-2 text-center">
               <p className="text-lg font-bold text-zinc-700 dark:text-zinc-200 tracking-wide">
-                下滑欣赏奶奶我的美貌~
+                {appearance.messages.footer.title}
               </p>
               <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
-                不想看？哼，随便你！我，我才不在乎呢...
+                {appearance.messages.footer.detail}
               </p>
               <svg 
-                className="w-8 h-8 text-[#FFB7C5] animate-bounce mt-2" 
+                className="w-8 h-8 text-theme-accent animate-bounce mt-2"
                 fill="none" 
                 stroke="currentColor" 
                 viewBox="0 0 24 24"
@@ -822,67 +688,7 @@ export function CitlaliInterface({ theme, onBackgroundChange }: { theme: Simulat
         onScrollTop={scrollToTop}
         onNextImage={handleNextImage}
       />
-      {false && <div className="fixed bottom-6 right-6 z-[9999] flex flex-col items-end gap-3">
-        
-        <div 
-          className={`absolute bottom-[100%] right-0 mb-3 transition-all duration-500 ease-out origin-bottom ${
-            showScrollTop ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-4 scale-95 pointer-events-none'
-          }`}
-        >
-          <Button 
-            onClick={scrollToTop} 
-            className="h-10 px-4 rounded-xl bg-white/70 hover:bg-white/90 dark:bg-zinc-800/80 dark:hover:bg-zinc-700 backdrop-blur-md shadow-md border border-[#FFB7C5]/40 flex items-center justify-center gap-1.5 text-[#FFB7C5] font-bold group transition-all"
-          >
-            <svg 
-              className="w-4 h-4 animate-bounce group-hover:animate-none group-hover:-translate-y-0.5 transition-transform" 
-              fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
-            </svg>
-            返回顶部
-          </Button>
-        </div>
 
-        {!showVideo && (
-          <Button
-            onClick={handleNextImage}
-            variant="outline"
-            className="animate-in fade-in slide-in-from-bottom-2 duration-500 h-10 px-4 rounded-xl bg-white/60 hover:bg-white/80 dark:bg-black/60 dark:hover:bg-black/80 backdrop-blur-md border border-white/40 text-[#FFB7C5] shadow-md flex items-center justify-center gap-1.5 font-bold transition-all"
-          >
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
-              <circle cx="12" cy="13" r="4"></circle>
-            </svg>
-            切换背景
-          </Button>
-        )}
-
-        {isVideoSupported && bgVideo && (
-          <Button
-            onClick={() => setShowVideo(!showVideo)}
-            variant="outline"
-            className="animate-in fade-in slide-in-from-bottom-5 duration-700 h-10 px-4 rounded-xl bg-white/40 hover:bg-white/60 dark:bg-black/40 dark:hover:bg-black/60 backdrop-blur-md border border-white/30 text-zinc-800 dark:text-zinc-200 shadow-md flex items-center justify-center gap-1.5 font-bold transition-all"
-          >
-            {showVideo ? (
-              <>
-                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                  <circle cx="8.5" cy="8.5" r="1.5"></circle>
-                  <polyline points="21 15 16 10 5 21"></polyline>
-                </svg>
-                切换为照片
-              </>
-            ) : (
-              <>
-                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <polygon points="5 3 19 12 5 21 5 3"></polygon>
-                </svg>
-                切换为动态背景
-              </>
-            )}
-          </Button>
-        )}
-      </div>}
     </div>
   )
 }

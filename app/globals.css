@@ -1,45 +1,22 @@
 @import "tailwindcss";
 
-/* Odette theme maps the Citlali pink utility classes to the requested cyan palette. */
+/* Theme colors come from theme-config.ts; all themes share these styles. */
 .theme-transition,
 .theme-transition *,
-:root.theme-odette *,
-:root.theme-citlali * {
+:root[data-simulator-theme] * {
   transition-property: color, background-color, border-color, box-shadow, opacity;
   transition-duration: 450ms;
   transition-timing-function: ease-in-out;
 }
-.theme-odette [class~="text-[#FFB7C5]"] { color: rgb(46, 218, 255) !important; }
-.theme-odette [class~="hover:text-[#FFB7C5]"]:hover { color: rgb(46, 218, 255) !important; }
-.theme-odette [class~="bg-[#FFB7C5]"] { background-color: rgb(46, 218, 255) !important; }
-.theme-odette [class~="bg-[#FFB7C5]/20"] { background-color: rgba(46, 218, 255, 0.2) !important; }
-.theme-odette [class~="bg-[#FFB7C5]/30"] { background-color: rgba(46, 218, 255, 0.3) !important; }
-.theme-odette [class~="hover:bg-[#FFB7C5]"]:hover { background-color: rgba(46, 218, 255, 0.12) !important; }
-.theme-odette .group:hover [class~="group-hover:text-white"] { color: rgb(24, 24, 27) !important; }
-.theme-odette [class~="hover:bg-[#ff9eb2]"]:hover { background-color: rgb(24, 185, 224) !important; }
-.theme-odette [class~="border-[#FFB7C5]"] { border-color: rgb(46, 218, 255) !important; }
-.theme-odette [class~="border-[#FFB7C5]/30"] { border-color: rgba(46, 218, 255, 0.3) !important; }
-.theme-odette [class~="border-[#FFB7C5]/40"] { border-color: rgba(46, 218, 255, 0.4) !important; }
-.theme-odette [class~="ring-[#FFB7C5]/30"] { --tw-ring-color: rgba(46, 218, 255, 0.3) !important; }
-.theme-odette [class~="accent-[#FFB7C5]"] { accent-color: rgb(46, 218, 255) !important; }
-.theme-odette [class~="bg-[#fff0f5]/50"] { background-color: rgba(224, 251, 255, 0.5) !important; }
-.theme-odette [class~="bg-[#fff0f5]/80"] { background-color: rgba(224, 251, 255, 0.8) !important; }
-.dark.theme-odette [class~="dark:bg-[#2a1a20]/50"],
-.dark .theme-odette [class~="dark:bg-[#2a1a20]/50"] { background-color: rgba(18, 59, 74, 0.5) !important; }
-.theme-odette [class~="shadow-[0_0_15px_rgba(255,183,197,0.6)]"] { box-shadow: 0 0 15px rgba(46, 218, 255, 0.6) !important; }
-.theme-odette [class~="hover:shadow-[0_0_25px_rgba(255,183,197,0.9)]"]:hover { box-shadow: 0 0 25px rgba(46, 218, 255, 0.9) !important; }
 
 .theme-transition .simulator-checkbox {
-  --checkbox-accent: #ffb7c5;
+  --checkbox-accent: var(--theme-accent);
   appearance: none;
   border: 1px solid #767676;
   background-color: white;
   background-position: center;
   background-repeat: no-repeat;
   transition: none;
-}
-.theme-odette .simulator-checkbox {
-  --checkbox-accent: rgb(46, 218, 255);
 }
 .simulator-checkbox:checked {
   border-color: transparent;
@@ -65,24 +42,22 @@
   }
 }
 
-@keyframes featured-citlali-in {
+@keyframes featured-theme-a-in {
   from { opacity: 0.45; box-shadow: 0 0 0 0 transparent; }
   to { opacity: 1; }
 }
-@keyframes featured-odette-in {
+@keyframes featured-theme-b-in {
   from { opacity: 0.45; box-shadow: 0 0 0 0 transparent; }
   to { opacity: 1; }
 }
-:root.theme-citlali .theme-featured-character { animation: featured-citlali-in 500ms ease-in-out; }
-:root.theme-odette .theme-featured-character { animation: featured-odette-in 500ms ease-in-out; }
+:root[data-theme-highlight-cycle="a"] .theme-featured-character { animation: featured-theme-a-in 500ms ease-in-out; }
+:root[data-theme-highlight-cycle="b"] .theme-featured-character { animation: featured-theme-b-in 500ms ease-in-out; }
 :root.theme-highlight-suppressed .theme-featured-character {
   animation: none !important;
   border-color: transparent !important;
   box-shadow: 0 0 0 0 transparent !important;
 }
 
-:root.theme-citlali { --motion-accent: #FFB7C5; }
-:root.theme-odette { --motion-accent: rgb(46, 218, 255); }
 
 @keyframes motion-enter {
   from { opacity: 0; transform: translateY(16px); filter: blur(6px); }
@@ -121,8 +96,8 @@
 .wish-button {
   --wish-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
   --wish-out: cubic-bezier(0.22, 1, 0.36, 1);
-  --wish-bg: #FFB7C5;
-  --wish-bg-hover: #ff9eb2;
+  --wish-bg: var(--theme-accent);
+  --wish-bg-hover: var(--theme-accent-hover);
   position: relative;
   isolation: isolate;
   overflow: hidden;
@@ -142,7 +117,6 @@
   box-shadow: 0 0 22px -2px color-mix(in srgb, var(--wish-bg-hover) 60%, transparent);
   -webkit-tap-highlight-color: transparent;
 }
-.theme-odette .wish-button { --wish-bg: rgb(46, 218, 255); --wish-bg-hover: rgb(24, 185, 224); }
 .wish-button:disabled { cursor: default; }
 @media (hover: hover) {
   .wish-button:hover:not(:disabled) {
@@ -240,6 +214,11 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  --color-theme-accent: var(--theme-accent);
+  --color-theme-surface: var(--theme-accent-surface);
+  --color-theme-surface-dark: var(--theme-accent-surface-dark-50);
+  --color-theme-hover-surface: var(--theme-accent-hover-surface);
+  --color-theme-hover-foreground: var(--theme-accent-hover-foreground);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-sans);

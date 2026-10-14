@@ -1,8 +1,8 @@
-import type themeSettings from "../themes.json"
-
-export type SimulatorTheme = keyof typeof themeSettings
+import type { SimulatorTheme } from "./theme-config"
+export type { SimulatorTheme } from "./theme-config"
 
 export type SimulatorThemeProps = {
   theme: SimulatorTheme
+  currentBackground: string
   onBackgroundChange: (background: string) => void
 }

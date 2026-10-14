@@ -42,7 +42,7 @@ export function CapturingRadianceInput({ id, value, onValueChange }: CapturingRa
             onPointerLeave={event => {
               if (event.pointerType === "mouse") setHelpOpen(false)
             }}
-            className="inline-flex size-8 shrink-0 items-center justify-center rounded-full text-[#FFB7C5] hover:bg-[#FFB7C5]/20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current"
+            className="inline-flex size-8 shrink-0 items-center justify-center rounded-full text-theme-accent hover:bg-theme-accent/20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current"
           >
             <CircleHelp size={20} aria-hidden="true" />
           </button>
@@ -55,7 +55,7 @@ export function CapturingRadianceInput({ id, value, onValueChange }: CapturingRa
             collisionPadding={12}
             onOpenAutoFocus={event => event.preventDefault()}
             onCloseAutoFocus={event => event.preventDefault()}
-            className="z-50 max-w-[calc(100vw-24px)] rounded-xl border border-[#FFB7C5]/30 bg-white/95 px-4 py-3 text-sm text-zinc-700 shadow-lg backdrop-blur-md dark:bg-zinc-900/95 dark:text-zinc-200"
+            className="z-50 max-w-[calc(100vw-24px)] rounded-xl border border-theme-accent/30 bg-white/95 px-4 py-3 text-sm text-zinc-700 shadow-lg backdrop-blur-md dark:bg-zinc-900/95 dark:text-zinc-200"
           >
             如果你不知道这是什么, 默认1就行
           </Popover.Content>

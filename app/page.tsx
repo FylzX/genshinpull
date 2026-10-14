@@ -1,41 +1,64 @@
 "use client"
 
-import { useCallback, useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react"
 import { flushSync } from "react-dom"
-import { defaultTheme, enabledThemes, themeIds, themeInterfaces } from "./components/theme-registry"
+import { defaultTheme, enabledThemes } from "./components/theme-registry"
+import { getThemeStyle } from "./components/theme-config"
 import type { SimulatorTheme } from "./components/theme-types"
 import { SimulatorStateProvider } from "./components/simulator-state"
 import { SimulatorThemeToggle } from "./components/simulator-floating-controls"
+import { CitlaliInterface } from "./components/citlali-interface"
 
 type ThemeBackground = { images: [string, string]; active: 0 | 1 }
 
 export default function GenshinSimulatorPage() {
   const [theme, setTheme] = useState<SimulatorTheme>(defaultTheme)
-  const [colorTheme, setColorTheme] = useState<SimulatorTheme>(defaultTheme)
+  const [highlightCycle, setHighlightCycle] = useState(false)
   const themeRef = useRef<SimulatorTheme>(defaultTheme)
   const switchSequence = useRef(0)
   const switchFrames = useRef<number[]>([])
   const [backgrounds, setBackgrounds] = useState<Partial<Record<SimulatorTheme, ThemeBackground>>>({})
 
-  useEffect(() => {
-    themeIds.forEach(id => {
-      document.documentElement.classList.toggle(`theme-${id}`, colorTheme === id)
-    })
-
+  // Select menus render in a body portal, so they need the same variables on <html>.
+  useLayoutEffect(() => {
+    const root = document.documentElement
+    const variables = Object.entries(getThemeStyle(theme))
+    variables.forEach(([name, value]) => root.style.setProperty(name, String(value)))
+    root.dataset.simulatorTheme = theme
+    root.dataset.themeHighlightCycle = highlightCycle ? "b" : "a"
     return () => {
-      document.documentElement.classList.remove(...themeIds.map(id => `theme-${id}`))
+      variables.forEach(([name]) => root.style.removeProperty(name))
+      delete root.dataset.simulatorTheme
+      delete root.dataset.themeHighlightCycle
     }
-  }, [colorTheme])
+  }, [theme, highlightCycle])
 
   useEffect(() => () => {
     switchFrames.current.forEach(window.cancelAnimationFrame)
     document.documentElement.classList.remove("theme-highlight-suppressed")
+    document.documentElement.classList.remove("theme-switching")
   }, [])
 
   const toggleTheme = useCallback((origin: { x: number; y: number }) => {
     if (enabledThemes.length < 2) return
     const root = document.documentElement
-    const nextTheme = enabledThemes[(enabledThemes.indexOf(themeRef.current) + 1) % enabledThemes.length]
+    const otherThemes = enabledThemes.filter(candidate => candidate !== themeRef.current)
+    let recentThemes: SimulatorTheme[] = []
+    try {
+      const stored = JSON.parse(localStorage.getItem("recentSimulatorThemes") || "[]")
+      recentThemes = Array.isArray(stored)
+        ? stored.filter((id): id is SimulatorTheme => typeof id === "string" && enabledThemes.includes(id as SimulatorTheme))
+        : []
+    } catch {}
+    const freshThemes = otherThemes.filter(candidate => !recentThemes.includes(candidate))
+    const candidates = freshThemes.length > 0 ? freshThemes : otherThemes
+    const nextTheme = candidates[Math.floor(Math.random() * candidates.length)]
+    try {
+      localStorage.setItem(
+        "recentSimulatorThemes",
+        JSON.stringify([nextTheme, ...recentThemes.filter(candidate => candidate !== nextTheme)].slice(0, 3)),
+      )
+    } catch {}
     const sequence = ++switchSequence.current
     themeRef.current = nextTheme
 
@@ -43,7 +66,7 @@ export default function GenshinSimulatorPage() {
     const commit = () => {
       root.classList.add("theme-highlight-suppressed")
       setTheme(nextTheme)
-      setColorTheme(nextTheme)
+      setHighlightCycle(current => !current)
     }
     const releaseHighlight = () => {
       const firstFrame = window.requestAnimationFrame(() => {
@@ -80,19 +103,31 @@ export default function GenshinSimulatorPage() {
     })
   }, [])
 
-  const updateBackground = (backgroundTheme: SimulatorTheme, background: string) => {
+  const updateBackground = useCallback((backgroundTheme: SimulatorTheme, background: string) => {
     setBackgrounds(current => {
-      const currentTheme = current[backgroundTheme] ?? { images: ["", ""], active: 0 }
-      if (currentTheme.images[currentTheme.active] === background) return current
+      const currentTheme = current[backgroundTheme]
+      if (currentTheme?.images[currentTheme.active] === background) return current
+      if (!currentTheme) {
+        return { ...current, [backgroundTheme]: { images: [background, ""], active: 0 } }
+      }
       const nextLayer: 0 | 1 = currentTheme.active === 0 ? 1 : 0
       const nextImages: [string, string] = [...currentTheme.images]
       nextImages[nextLayer] = background
       return { ...current, [backgroundTheme]: { images: nextImages, active: nextLayer } }
     })
-  }
+  }, [])
+
+  const handleBackgroundChange = useCallback((background: string) => {
+    updateBackground(theme, background)
+  }, [theme, updateBackground])
+  const activeBackground = backgrounds[theme]
 
   return (
     <SimulatorStateProvider>
+      <div
+        className="simulator-theme-root"
+        style={getThemeStyle(theme)}
+      >
       <div className="fixed inset-0 -z-10 overflow-hidden bg-zinc-900">
         {enabledThemes.map(backgroundTheme => (
           <div
@@ -109,15 +144,13 @@ export default function GenshinSimulatorPage() {
           </div>
         ))}
       </div>
-      {enabledThemes.map(id => {
-        const ThemeInterface = themeInterfaces[id]
-        return (
-          <div key={id} hidden={theme !== id} aria-hidden={theme !== id}>
-            <ThemeInterface theme={id} onBackgroundChange={background => updateBackground(id, background)} />
-          </div>
-        )
-      })}
+      <CitlaliInterface
+        theme={theme}
+        currentBackground={activeBackground ? activeBackground.images[activeBackground.active] : ""}
+        onBackgroundChange={handleBackgroundChange}
+      />
       <SimulatorThemeToggle onToggleTheme={toggleTheme} disabled={enabledThemes.length < 2} />
+      </div>
     </SimulatorStateProvider>
   )
 }
