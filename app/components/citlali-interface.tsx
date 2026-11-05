@@ -436,7 +436,7 @@ export function CitlaliInterface({ theme, currentBackground, onBackgroundChange 
                         
                         <SelectContent 
                           className={item.isChar 
-                            ? "w-[92vw] max-w-[820px] max-h-[50vh] overflow-y-auto overscroll-contain touch-pan-y bg-white/30 dark:bg-black/30 backdrop-blur-xl border border-white/40 shadow-2xl rounded-2xl p-2 sm:p-4"
+                            ? "w-[92vw] max-w-[900px] max-h-[50vh] overflow-y-auto overscroll-contain touch-pan-y bg-white/30 dark:bg-black/30 backdrop-blur-xl border border-white/40 shadow-2xl rounded-2xl p-2 sm:p-4"
                             : ""
                           }
                         >
