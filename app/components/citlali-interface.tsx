@@ -14,6 +14,7 @@ import { CalculateButton } from "./calculate-button"
 import { CapturingRadianceInput } from "./capturing-radiance-input"
 import { NumberInput } from "./number-input"
 import { SimulatorFloatingControls } from "./simulator-floating-controls"
+import { ShareResultButton } from "./share-result-button"
 import { SimulatorHeader } from "./simulator-header"
 import { themeConfig } from "./theme-config"
 import type { SimulatorThemeProps } from "./theme-types"
@@ -261,9 +262,19 @@ export function CitlaliInterface({ theme, currentBackground, onBackgroundChange 
       .sort((a, b) => b[1] - a[1])
       .slice(0, 15);
 
+    // Freeze the inputs behind this result, so the share image still matches it after the form is edited.
+    const returnRate = avgBallsBack / avgPulls;
+    const shareSnapshot = {
+      targets: { ...targets },
+      names: { ...names },
+      budget: useStarglitter ? effectiveFates + Math.floor((effectiveFates * returnRate) / (1 - returnRate)) : effectiveFates,
+      useStarglitter,
+    };
+
     setReport({ 
       prob, pulls, avgPulls, avgDust, avgBallsBack, theoryAvg, 
       netCost: avgPulls - avgBallsBack, topCombos, trimmedHistData,
+      shareSnapshot,
       runId: Date.now()
     });
     } finally {
@@ -548,6 +559,14 @@ export function CitlaliInterface({ theme, currentBackground, onBackgroundChange 
                 </h2>
 
                 <p className="text-zinc-600 font-bold mt-2">预计成功率</p>
+                <ShareResultButton
+                  theme={theme}
+                  background={currentBackground}
+                  prob={report.prob}
+                  pulls={report.pulls}
+                  avgPulls={report.avgPulls}
+                  snapshot={report.shareSnapshot}
+                />
               </div>
 
               <Card className="shadow-lg border-white/50 bg-white/85 dark:bg-zinc-950/85 backdrop-blur-md w-full motion-enter" style={{ "--motion-i": 1 } as React.CSSProperties}>
