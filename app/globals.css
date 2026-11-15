@@ -355,6 +355,17 @@
     @apply font-sans;
   }
 }
+:root[data-wallpaper-immersed] [data-floating-control]:not(:focus-visible, :has(:focus-visible)) {
+  opacity: 0;
+  pointer-events: none;
+}
+@media (hover: hover) {
+  :root[data-wallpaper-immersed] [data-floating-control]:hover {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
 /* 隐藏全局（浏览器右侧）滚动条 */
 html, body {
   -ms-overflow-style: none;  /* IE 和 Edge */

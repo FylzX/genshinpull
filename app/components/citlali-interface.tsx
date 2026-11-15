@@ -85,13 +85,38 @@ function AnimatedPercentage({ value }: { value: number }) {
   return <>{displayValue.toFixed(2)}%</>;
 }
 
+const WALLPAPER_IDLE_MS = 2500;
+
+function useHtmlWallpaperImmersedFlag(active: boolean) {
+  useEffect(() => {
+    if (!active) return;
+    const root = document.documentElement;
+    let timer = 0;
+    const immerse = () => { root.dataset.wallpaperImmersed = ""; };
+    const wake = () => {
+      delete root.dataset.wallpaperImmersed;
+      window.clearTimeout(timer);
+      timer = window.setTimeout(immerse, WALLPAPER_IDLE_MS);
+    };
+    immerse();
+    const events = ["pointermove", "pointerdown", "keydown"] as const;
+    events.forEach(event => window.addEventListener(event, wake, { passive: true }));
+    return () => {
+      window.clearTimeout(timer);
+      events.forEach(event => window.removeEventListener(event, wake));
+      delete root.dataset.wallpaperImmersed;
+    };
+  }, [active]);
+}
 
 export function CitlaliInterface({ theme, currentBackground, onBackgroundChange }: SimulatorThemeProps) {
   const appearance = themeConfig[theme]
   const initializedBackgroundThemes = useRef(new Set<SimulatorThemeProps["theme"]>())
   
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const [inWallpaperView, setInWallpaperView] = useState(false);
   const resultRef = useRef<HTMLDivElement>(null);
+  const wallpaperRef = useRef<HTMLDivElement>(null);
 
   const {
     fates, setFates, primos, setPrimos, useStarglitter, setUseStarglitter,
@@ -151,10 +176,14 @@ export function CitlaliInterface({ theme, currentBackground, onBackgroundChange 
       } else {
         setShowScrollTop(false);
       }
+      setInWallpaperView((wallpaperRef.current?.getBoundingClientRect().top ?? Infinity) <= 1);
     };
+    handleScroll();
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  useHtmlWallpaperImmersedFlag(inWallpaperView);
 
   const handleNextImage = () => {
     const imagePool = appearance.backgroundImages;
@@ -678,7 +707,7 @@ export function CitlaliInterface({ theme, currentBackground, onBackgroundChange 
             </CardContent>
           </Card>
 
-          <div className="h-[100vh] w-full bg-transparent pointer-events-none" />
+          <div ref={wallpaperRef} className="h-[100vh] w-full bg-transparent pointer-events-none" />
 
         </div>
       </div>

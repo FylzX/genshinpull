@@ -14,7 +14,7 @@ type SimulatorFloatingControlsProps = {
 
 export function SimulatorFloatingControls({ showScrollTop, onScrollTop, onNextImage }: SimulatorFloatingControlsProps) {
   return (
-    <div className="fixed bottom-[5.5rem] sm:bottom-[4.75rem] right-3 sm:right-6 z-40 flex flex-col items-end gap-3">
+    <div data-floating-control className="fixed bottom-[5.5rem] sm:bottom-[4.75rem] right-3 sm:right-6 z-40 flex flex-col items-end gap-3">
       <div className={`absolute bottom-[100%] right-0 mb-3 transition-all duration-500 ease-out origin-bottom ${showScrollTop ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-4 scale-95 pointer-events-none'}`}>
         <Button onClick={onScrollTop} className={`${FLOATING_BUTTON_SIZE} sm:px-4 rounded-xl bg-white/70 hover:bg-white/90 dark:bg-zinc-800/80 dark:hover:bg-zinc-700 backdrop-blur-md shadow-md border border-theme-accent/40 flex items-center justify-center text-theme-accent font-bold group transition-all`}>
           <svg className="w-4 h-4 animate-bounce group-hover:animate-none group-hover:-translate-y-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" /></svg>
@@ -37,6 +37,7 @@ export const SimulatorThemeToggle = memo(function SimulatorThemeToggle({ onToggl
         onToggleTheme({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 })
       }}
       disabled={disabled}
+      data-floating-control
       title={disabled ? "当前仅启用一个主题" : "切换主题"}
       variant="outline"
       className={`fixed bottom-6 right-3 sm:right-6 z-40 ${FLOATING_BUTTON_SIZE} sm:px-3 rounded-xl bg-white/40 hover:bg-white/60 dark:bg-black/40 dark:hover:bg-black/60 backdrop-blur-md border border-white/30 text-zinc-800 dark:text-zinc-200 shadow-md flex items-center justify-center font-bold transition-all`}
