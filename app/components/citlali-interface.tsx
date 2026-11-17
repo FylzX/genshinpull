@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { runSimulation } from "@/lib/simulator"
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, ReferenceLine } from 'recharts'
 
 import avatarData from "../avatar.json"
 import characterElements from "../character-elements.json"
@@ -246,6 +246,17 @@ export function CitlaliInterface({ theme, currentBackground, onBackgroundChange 
 
     const trimmedHistData = histData.filter(d => d.发生次数 > 0 || Math.random() > 0);
 
+    // The budget the success rate is measured against. With 算上返还星辉 on,
+    // it is the same "共 X 抽" estimate the form shows.
+    const returnRate = avgBallsBack / avgPulls;
+    const budget = useStarglitter
+      ? effectiveFates + Math.floor((effectiveFates * returnRate) / (1 - returnRate))
+      : effectiveFates;
+    const budgetIndex = Math.floor((budget - minPull) / binSize);
+    const budgetBin = histData[budgetIndex]?.name;
+    // Grow the label away from the nearer edge so it is not clipped or drawn over the y axis.
+    const budgetLabelAnchor = budgetIndex < BINS_COUNT / 2 ? 'start' : 'end';
+
     const comboMap: Record<string, number> = {};
     results.forEach(r => {
       const parts = [];
@@ -264,6 +275,7 @@ export function CitlaliInterface({ theme, currentBackground, onBackgroundChange 
     setReport({ 
       prob, pulls, avgPulls, avgDust, avgBallsBack, theoryAvg, 
       netCost: avgPulls - avgBallsBack, topCombos, trimmedHistData,
+      budget, budgetBin, budgetLabelAnchor,
       runId: Date.now()
     });
     } finally {
@@ -562,7 +574,7 @@ export function CitlaliInterface({ theme, currentBackground, onBackgroundChange 
                 <CardContent>
                   <div className="h-[350px] w-full mt-4">
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={report.trimmedHistData} margin={{ top: 5, right: 20, left: 0, bottom: 20 }}>
+                      <BarChart data={report.trimmedHistData} margin={{ top: 24, right: 20, left: 0, bottom: 20 }}>
                         <defs>
                           <linearGradient id={`${theme}-clash`} x1="1" y1="0" x2="0" y2="1">
                             <stop offset="0%" stopColor={appearance.colors.chartStart} stopOpacity={0.95} />
@@ -575,6 +587,10 @@ export function CitlaliInterface({ theme, currentBackground, onBackgroundChange 
                         <YAxis tick={{fontSize: 12, fill: '#475569'}} />
                         <Tooltip content={<CustomTooltip />} cursor={{fill: appearance.colors.chartCursor, opacity: 0.15}} />
                         <Bar dataKey="发生次数" fill={`url(#${theme}-clash)`} radius={[4, 4, 0, 0]} isAnimationActive={true} animationDuration={1000} />
+                        {report.budgetBin && (
+                          <ReferenceLine x={report.budgetBin} stroke="#3f3f46" strokeWidth={2} strokeDasharray="6 4"
+                            label={{ value: `你的 ${report.budget} 抽`, position: 'top', textAnchor: report.budgetLabelAnchor, fill: '#3f3f46', fontSize: 12, fontWeight: 700 }} />
+                        )}
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
