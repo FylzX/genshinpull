@@ -468,8 +468,8 @@ export function CitlaliInterface({ theme, currentBackground, onBackgroundChange 
                   </div>
                   <p id={`${theme}-same-weapon-banner-help`} className="pl-7 text-sm text-zinc-600 dark:text-zinc-300">
                     {sameWeaponBanner
-                      ? "定轨 A 时先抽到 B 计入 B 的目标"
-                      : "先抽齐 A, 再抽齐 B, 歪出的武器不计入目标"}
+                      ? "定轨 A 时抽到 B, 计入 B 的目标"
+                      : "先抽 A, 再抽 B, 歪出的武器不计入目标"}
                   </p>
                 </div>
                 {inputErrors.targets && (
