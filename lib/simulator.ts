@@ -7,10 +7,12 @@ export interface SimulationTargets {
   weapPity?: number;        
   isCharGuaranteed?: boolean; 
   initialCharCounter?: number;
+  sameWeaponBanner?: boolean;
 }
 
 export interface SimResult {
   totalPulls: number; stardust: number;
+  minimumStartingPulls: number;
   inv: { cA: number; cB: number; wA: number; wB: number; Std: number };
 }
 
@@ -24,6 +26,12 @@ export function runOneSimLogic(targets: SimulationTargets): SimResult {
   let fatePoint = 0;
   
   let totalPulls = 0, stardust = 0;
+  let minimumStartingPulls = 0;
+  const beginPull = () => {
+    totalPulls++;
+    // Only glitter received on earlier pulls can pay for this pull.
+    minimumStartingPulls = Math.max(minimumStartingPulls, totalPulls - Math.floor(stardust / 5));
+  };
   const inv = { cA: 0, cB: 0, wA: 0, wB: 0, Std: 0 };
   const charOwned: Record<string, number> = { "Std": 1 };
 
@@ -48,7 +56,8 @@ export function runOneSimLogic(targets: SimulationTargets): SimResult {
       currentCharPity = 0; 
 
       while (true) {
-        totalPulls++; pGold++; charPurplePity++; // 五星和四星计数同步累加
+        beginPull();
+        pGold++; charPurplePity++; // 五星和四星计数同步累加
         
         // 【1. 先判定是否出 5 星】
         const prob = 0.006 + Math.max(0, pGold - 73) * 0.06;
@@ -104,6 +113,7 @@ export function runOneSimLogic(targets: SimulationTargets): SimResult {
   }
 
   // ---------------- 武器池逻辑 ----------------
+  const sameWeaponBanner = targets.sameWeaponBanner ?? true;
   let currentFocus: 'wA' | 'wB' = 'wA';
   let weapPurplePity = 0; // 武器池的 4 星计数
 
@@ -114,14 +124,15 @@ export function runOneSimLogic(targets: SimulationTargets): SimResult {
     currentWeapPity = 0; 
 
     while (true) {
-      totalPulls++; pGold++; weapPurplePity++; // 五星和四星计数同步累加
+      beginPull();
+      pGold++; weapPurplePity++; // 五星和四星计数同步累加
       
       // 【1. 先判定是否出 5 星】
       const prob = 0.007 + Math.max(0, pGold - 62) * 0.07;
       if (Math.random() < prob) {
         stardust += 10; // 出五星必得10星辉
         
-        let res = "";
+        let res: 'wA' | 'wB' | 'Std' | null = null;
         
         if (fatePoint === 1) { 
           res = currentFocus; 
@@ -137,7 +148,10 @@ export function runOneSimLogic(targets: SimulationTargets): SimResult {
               fatePoint = 0; 
             }
             else { 
-              res = currentFocus === "wA" ? "wB" : "wA"; 
+              // 分期时，歪出的当期 UP 仍增加命定值，但不属于另一项目标。
+              if (sameWeaponBanner) {
+                res = currentFocus === "wA" ? "wB" : "wA";
+              }
               fatePoint = 1; 
             }
           } else { 
@@ -147,7 +161,7 @@ export function runOneSimLogic(targets: SimulationTargets): SimResult {
           }
         }
         
-        if (res in inv) inv[res as keyof typeof inv]++;
+        if (res !== null) inv[res]++;
         break; // 当前五星抽取结束，跳出内层while循环
       } 
       // 【2. 如果没出 5 星，再判定是否出 4 星】
@@ -166,7 +180,7 @@ export function runOneSimLogic(targets: SimulationTargets): SimResult {
     if (inv['wA'] >= targets.weapA && inv['wB'] >= targets.weapB) break;
   }
   
-  return { totalPulls, stardust, inv };
+  return { totalPulls, stardust, minimumStartingPulls, inv };
 }
 
 export async function runSimulation(targets: SimulationTargets, count: number): Promise<SimResult[]> {

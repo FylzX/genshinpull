@@ -8,13 +8,11 @@ type NumberInputProps = Omit<React.ComponentProps<typeof Input>, "value" | "onCh
   onValueChange: (value: number) => void
 }
 
-// The input shows the user's own text while it still parses to `value`, so it can
-// be emptied or hold "-". A string value prop also makes React rewrite "05" to "5",
-// which it skips when given the number 5.
+// Keep the draft while editing so an empty input can represent zero.
 export function NumberInput({ value, onValueChange, onBlur, ...props }: NumberInputProps) {
-  const [draft, setDraft] = React.useState(String(value))
+  const [draft, setDraft] = React.useState(Number.isNaN(value) ? "" : String(value))
   const parsed = Number(draft)
-  const shown = parsed === value || Number.isNaN(parsed) ? draft : String(value)
+  const shown = parsed === value || Number.isNaN(value) ? draft : String(value)
 
   return (
     <Input
@@ -24,11 +22,10 @@ export function NumberInput({ value, onValueChange, onBlur, ...props }: NumberIn
       onChange={e => {
         const next = e.target.value.replace(/^(-?)0+(?=\d)/, "$1")
         setDraft(next)
-        const n = Number(next)
-        if (Number.isFinite(n)) onValueChange(n)
+        onValueChange(e.target.validity.badInput ? Number.NaN : Number(next))
       }}
       onBlur={e => {
-        setDraft(String(value))
+        if (!Number.isNaN(value)) setDraft(String(value))
         onBlur?.(e)
       }}
     />

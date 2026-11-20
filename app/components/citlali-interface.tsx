@@ -5,7 +5,6 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { runSimulation } from "@/lib/simulator"
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, ReferenceLine } from 'recharts'
 
 import avatarData from "../avatar.json"
@@ -17,7 +16,7 @@ import { SimulatorFloatingControls } from "./simulator-floating-controls"
 import { SimulatorHeader } from "./simulator-header"
 import { themeConfig } from "./theme-config"
 import type { SimulatorThemeProps } from "./theme-types"
-import { useSimulatorState } from "./simulator-state"
+import { PITY_LIMITS, useSimulatorState } from "./simulator-state"
 
 const THEME_ACCENT_TEXT = "text-theme-accent"
 const THEME_ACCENT_HOVER_TEXT = "group-hover:text-theme-hover-foreground"
@@ -86,6 +85,10 @@ function AnimatedPercentage({ value }: { value: number }) {
 }
 
 
+function InputError({ id, message }: { id: string; message?: string }) {
+  return message ? <p id={id} role="alert" className="text-sm text-red-700 dark:text-red-300">{message}</p> : null
+}
+
 export function CitlaliInterface({ theme, currentBackground, onBackgroundChange }: SimulatorThemeProps) {
   const appearance = themeConfig[theme]
   const initializedBackgroundThemes = useRef(new Set<SimulatorThemeProps["theme"]>())
@@ -95,8 +98,8 @@ export function CitlaliInterface({ theme, currentBackground, onBackgroundChange 
 
   const {
     fates, setFates, primos, setPrimos, useStarglitter, setUseStarglitter,
-    simCount, loading, setLoading, targets, setTargets,
-    names, setNames, report, setReport,
+    simCount, loading, targets, setTargets, names, setNames,
+    report, reportIsStale, inputErrors, startSim, effectiveFates, estimatedReturn,
   } = useSimulatorState();
 
   useEffect(() => {
@@ -184,105 +187,6 @@ export function CitlaliInterface({ theme, currentBackground, onBackgroundChange 
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const startSim = async () => {
-    if (fates < 0 || primos < 0) {
-      setReport({ negative: true });
-      return;
-    }
-
-    if (names.cA === names.cB && targets.charB > 0) {
-      alert("校验失败: 角色A与角色B不能重复选择");
-      return;
-    }
-
-    const totalTargets = targets.charA + targets.charB + targets.weapA + targets.weapB;
-    if (totalTargets === 0) {
-      setReport({ empty: true });
-      return;
-    }
-
-    setLoading(true);
-    try {
-      await new Promise(resolve => setTimeout(resolve, 50));
-    
-    const results = await runSimulation(targets, simCount);
-    
-    const pulls = results.map(r => r.totalPulls).sort((a, b) => a - b);
-    
-    const effectiveFates = fates + Math.floor(primos / 160);
-    
-    let successCount = 0;
-    if (useStarglitter) {
-      successCount = results.filter(r => (r.totalPulls - Math.floor(r.stardust / 5)) <= effectiveFates).length;
-    } else {
-      successCount = pulls.filter(p => p <= effectiveFates).length;
-    }
-    const prob = successCount / Math.max(1, simCount);
-    
-    const avgPulls = pulls.reduce((a, b) => a + b, 0) / simCount;
-    const avgDust = results.reduce((a, b) => a + b.stardust, 0) / simCount;
-    const avgBallsBack = results.reduce((sum, result) => sum + Math.floor(result.stardust / 5), 0) / simCount;
-    
-    const theoryAvg = (targets.charA + targets.charB) * 93.46 + (targets.weapA + targets.weapB) * 66.5;
-
-    const BINS_COUNT = 40; 
-    const minPull = pulls[0];
-    const maxPull = pulls[pulls.length - 1];
-    const binSize = Math.max(1, Math.ceil((maxPull - minPull + 1) / BINS_COUNT)); 
-
-    const histData = Array.from({length: BINS_COUNT}, (_, i) => {
-      const start = minPull + i * binSize;
-      return {
-        name: `${start}~${start + binSize - 1}抽`,
-        范围: `${start}抽 - ${start + binSize - 1}抽`,
-        发生次数: 0,
-      };
-    });
-
-    pulls.forEach(p => {
-      const idx = Math.min(Math.floor((p - minPull) / binSize), BINS_COUNT - 1);
-      histData[idx].发生次数++;
-    });
-
-    const trimmedHistData = histData.filter(d => d.发生次数 > 0 || Math.random() > 0);
-
-    // The budget the success rate is measured against. With 算上返还星辉 on,
-    // it is the same "共 X 抽" estimate the form shows.
-    const returnRate = avgBallsBack / avgPulls;
-    const budget = useStarglitter
-      ? effectiveFates + Math.floor((effectiveFates * returnRate) / (1 - returnRate))
-      : effectiveFates;
-    const budgetIndex = Math.floor((budget - minPull) / binSize);
-    const budgetBin = histData[budgetIndex]?.name;
-    // Grow the label away from the nearer edge so it is not clipped or drawn over the y axis.
-    const budgetLabelAnchor = budgetIndex < BINS_COUNT / 2 ? 'start' : 'end';
-
-    const comboMap: Record<string, number> = {};
-    results.forEach(r => {
-      const parts = [];
-      if (r.inv.cA > 0) parts.push(`cA:${r.inv.cA}`);
-      if (r.inv.cB > 0) parts.push(`cB:${r.inv.cB}`);
-      if (r.inv.wA > 0) parts.push(`wA:${r.inv.wA}`);
-      if (r.inv.wB > 0) parts.push(`wB:${r.inv.wB}`);
-      const key = parts.length > 0 ? parts.join('|') : "none";
-      comboMap[key] = (comboMap[key] || 0) + 1;
-    });
-
-    const topCombos = Object.entries(comboMap)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 15);
-
-    setReport({ 
-      prob, pulls, avgPulls, avgDust, avgBallsBack, theoryAvg, 
-      netCost: avgPulls - avgBallsBack, topCombos, trimmedHistData,
-      budget, budgetBin, budgetLabelAnchor,
-      runId: Date.now()
-    });
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
@@ -296,15 +200,15 @@ export function CitlaliInterface({ theme, currentBackground, onBackgroundChange 
     return null;
   };
 
-  const effectiveFates = fates + Math.floor(primos / 160);
-  let actualReturnPullsDisplay: number | string = "(待计算)";
-  let actualTotalPullsDisplay: number | string = "(待计算)";
-  if (report && report.avgPulls > 0) {
-    const returnRate = report.avgBallsBack / report.avgPulls;
-    const actualReturn = Math.floor((effectiveFates * returnRate) / (1 - returnRate));
-    actualReturnPullsDisplay = actualReturn;
-    actualTotalPullsDisplay = effectiveFates + actualReturn;
-  }
+  const fields = [
+    { label: "角色A", key: "cA", targetKey: "charA", list: CHAR_LIST, isChar: true },
+    { label: "角色B", key: "cB", targetKey: "charB", list: CHAR_LIST, isChar: true },
+    { label: "武器A", key: "wA", targetKey: "weapA", list: WEAP_LIST, isChar: false },
+    { label: "武器B", key: "wB", targetKey: "weapB", list: WEAP_LIST, isChar: false },
+  ] as const;
+  const reportTargets = report?.input.targets;
+  const budgetMarker = report?.budgetMarker;
+  const sameWeaponBanner = targets.sameWeaponBanner ?? true;
 
   const isFeaturedCharacter = (name: string) => name === appearance.featuredCharacter;
   const isFeaturedWeapon = (name: string) => name === appearance.featuredWeapon;
@@ -325,14 +229,24 @@ export function CitlaliInterface({ theme, currentBackground, onBackgroundChange 
             <CardContent className="flex flex-col gap-6">
               <div className="flex flex-col">
                 <div className="flex flex-wrap items-center gap-x-6 gap-y-3 md:gap-6">
-                  <div className="flex items-center gap-2">
-                    <Label className="font-bold text-zinc-700 dark:text-zinc-300">已有粉球:</Label>
-                    <NumberInput value={fates} onValueChange={setFates} className="w-28 bg-white/50 dark:bg-black/50" />
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <Label htmlFor={`${theme}-fates`} className="font-bold text-zinc-700 dark:text-zinc-300">已有粉球:</Label>
+                      <NumberInput id={`${theme}-fates`} min={0} value={fates} onValueChange={setFates}
+                        aria-invalid={!!inputErrors.fates} aria-describedby={inputErrors.fates ? `${theme}-fates-error` : undefined}
+                        className="w-28 bg-white/50 dark:bg-black/50" />
+                    </div>
+                    <InputError id={`${theme}-fates-error`} message={inputErrors.fates} />
                   </div>
                   
-                  <div className="flex items-center gap-2">
-                    <Label className="font-bold text-zinc-700 dark:text-zinc-300">已有原石:</Label>
-                    <NumberInput value={primos} onValueChange={setPrimos} className="w-28 bg-white/50 dark:bg-black/50" />
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <Label htmlFor={`${theme}-primos`} className="font-bold text-zinc-700 dark:text-zinc-300">已有原石:</Label>
+                      <NumberInput id={`${theme}-primos`} min={0} value={primos} onValueChange={setPrimos}
+                        aria-invalid={!!inputErrors.primos} aria-describedby={inputErrors.primos ? `${theme}-primos-error` : undefined}
+                        className="w-28 bg-white/50 dark:bg-black/50" />
+                    </div>
+                    <InputError id={`${theme}-primos-error`} message={inputErrors.primos} />
                   </div>
                   
                   <div className="flex items-center space-x-2 border-zinc-300 dark:border-zinc-700">
@@ -355,20 +269,18 @@ export function CitlaliInterface({ theme, currentBackground, onBackgroundChange 
                   <div className="overflow-hidden">
                     <div className="pt-4">
                       <div className="text-zinc-900 dark:text-zinc-100 text-sm font-medium bg-theme-surface/50 dark:bg-theme-surface-dark px-5 py-3 rounded-xl border border-theme-accent/30 w-max shadow-sm">
-                        <span className="text-theme-accent font-black text-lg pr-1">{effectiveFates}</span> 有效抽数
-                        <span className="ml-2 pr-1">预计返还</span> 
-                        {report ? (
+                        <span className="text-theme-accent font-black text-lg pr-1">{Number.isSafeInteger(effectiveFates) && effectiveFates >= 0 ? effectiveFates : "—"}</span> 有效抽数
+                        <span className="ml-2 pr-1">预计返还</span>
+                        {estimatedReturn !== null ? (
                           <>
-                            <span className="text-theme-accent font-black text-lg px-1">{actualReturnPullsDisplay}</span> 抽
+                            <span className="text-theme-accent font-black text-lg px-1">{estimatedReturn}</span> 抽
                             <span className="ml-2 pr-1">共</span>
-                            <span className="text-theme-accent font-black text-lg px-1">{actualTotalPullsDisplay}</span> 抽
+                            <span className="text-theme-accent font-black text-lg px-1">{effectiveFates + estimatedReturn}</span> 抽
                           </>
                         ) : (
-                          <>
-                            <span className="text-theme-accent font-bold px-1">{actualReturnPullsDisplay}</span>
-                            <span className="ml-2 pr-1">共</span>
-                            <span className="text-theme-accent font-bold px-1">{actualTotalPullsDisplay}</span>
-                          </>
+                          <span className="text-theme-accent font-bold px-1">
+                            {reportIsStale ? "(请重新计算)" : report ? "(暂无法估算)" : "(待计算)"}
+                          </span>
                         )}
                       </div>
                     </div>
@@ -377,30 +289,38 @@ export function CitlaliInterface({ theme, currentBackground, onBackgroundChange 
               </div>
 
               <div className="flex flex-wrap items-center gap-x-6 gap-y-3 md:gap-6 p-4 rounded-xl bg-theme-surface/50 dark:bg-theme-surface-dark border border-theme-accent/30">
-                <div className="flex items-center gap-3">
-                  <Label className="font-semibold text-zinc-700 dark:text-zinc-300">角色池已垫:</Label>
-                  <div className="relative">
-                    <NumberInput 
-                      min={0} max={89} 
-                      value={targets.charPity ?? 0} 
-                      onValueChange={v => setTargets({...targets, charPity: Math.min(89, Math.max(0, v))})} 
-                      className="w-20 bg-white/70 dark:bg-black/70 pr-6 text-center" 
-                    />
-                    <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-zinc-400">抽</span>
+                <div>
+                  <div className="flex items-center gap-3">
+                    <Label htmlFor={`${theme}-charPity`} className="font-semibold text-zinc-700 dark:text-zinc-300">角色池已垫:</Label>
+                    <div className="relative">
+                      <NumberInput
+                        id={`${theme}-charPity`} min={0} max={PITY_LIMITS.charPity}
+                        value={targets.charPity ?? 0}
+                        onValueChange={value => setTargets(previous => ({ ...previous, charPity: value }))}
+                        aria-invalid={!!inputErrors.charPity} aria-describedby={inputErrors.charPity ? `${theme}-charPity-error` : undefined}
+                        className="w-20 bg-white/70 dark:bg-black/70 pr-6 text-center"
+                      />
+                      <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-zinc-400">抽</span>
+                    </div>
                   </div>
+                  <InputError id={`${theme}-charPity-error`} message={inputErrors.charPity} />
                 </div>
 
-                <div className="flex items-center gap-3">
-                  <Label className="font-semibold text-zinc-700 dark:text-zinc-300">武器池已垫:</Label>
-                  <div className="relative">
-                    <NumberInput 
-                      min={0} max={79} 
-                      value={targets.weapPity ?? 0} 
-                      onValueChange={v => setTargets({...targets, weapPity: Math.min(79, Math.max(0, v))})} 
-                      className="w-20 bg-white/70 dark:bg-black/70 pr-6 text-center" 
-                    />
-                    <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-zinc-400">抽</span>
+                <div>
+                  <div className="flex items-center gap-3">
+                    <Label htmlFor={`${theme}-weapPity`} className="font-semibold text-zinc-700 dark:text-zinc-300">武器池已垫:</Label>
+                    <div className="relative">
+                      <NumberInput
+                        id={`${theme}-weapPity`} min={0} max={PITY_LIMITS.weapPity}
+                        value={targets.weapPity ?? 0}
+                        onValueChange={value => setTargets(previous => ({ ...previous, weapPity: value }))}
+                        aria-invalid={!!inputErrors.weapPity} aria-describedby={inputErrors.weapPity ? `${theme}-weapPity-error` : undefined}
+                        className="w-20 bg-white/70 dark:bg-black/70 pr-6 text-center"
+                      />
+                      <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-zinc-400">抽</span>
+                    </div>
                   </div>
+                  <InputError id={`${theme}-weapPity-error`} message={inputErrors.weapPity} />
                 </div>
 
                 <CapturingRadianceInput
@@ -424,24 +344,22 @@ export function CitlaliInterface({ theme, currentBackground, onBackgroundChange 
               </div>
 
               <div className="grid grid-cols-1 justify-start gap-y-2 border-t border-zinc-200/50 pt-5 md:grid-cols-2 lg:grid-cols-[max-content_max-content] lg:gap-x-6">
-                {[
-                  { label: "角色A", key: "cA", targetKey: "charA", list: CHAR_LIST, isChar: true },
-                  { label: "角色B", key: "cB", targetKey: "charB", list: CHAR_LIST, isChar: true },
-                  { label: "武器A", key: "wA", targetKey: "weapA", list: WEAP_LIST, isChar: false },
-                  { label: "武器B", key: "wB", targetKey: "weapB", list: WEAP_LIST, isChar: false },
-                ].map((item) => (
+                {fields.map(item => (
                   <div key={item.key} className="flex flex-col gap-2">
-                    <Label className="text-zinc-500">{item.label} 目标</Label>
+                    <Label htmlFor={`${theme}-${item.targetKey}`} className="text-zinc-500">{item.label} 目标</Label>
                     <div className="flex w-full items-center gap-2">
-                      <Select value={(names as any)[item.key]} onValueChange={v => setNames({...names,[item.key]: v})}>
-                        
-                        <SelectTrigger className={`
+                      <Select value={names[item.key]} onValueChange={value => setNames(previous => ({ ...previous, [item.key]: value }))}>
+                        <SelectTrigger
+                          aria-label={item.label + " 名称"}
+                          aria-invalid={item.key === "cB" && !!inputErrors.cB}
+                          aria-describedby={item.key === "cB" && inputErrors.cB ? `${theme}-cB-error` : undefined}
+                          className={`
                           bg-white/50 dark:bg-black/50 transition-all text-left
                           ${item.isChar
                             ? '!h-[60px] w-full md:!w-[210px] rounded-xl [&>span]:!line-clamp-none [&>span]:flex [&>span]:items-center [&>span]:flex-1 [&>span]:min-w-0'
                             : 'max-md:!h-11 h-10 w-full md:w-[160px]'}
-                          ${isFeaturedCharacter((names as any)[item.key]) && item.isChar ? `theme-featured-character border-theme-accent ring-2 ring-theme-accent/30` : ''}
-                          ${isFeaturedWeapon((names as any)[item.key]) && !item.isChar ? 'text-theme-accent font-bold border-theme-accent' : ''}
+                          ${isFeaturedCharacter(names[item.key]) && item.isChar ? `theme-featured-character border-theme-accent ring-2 ring-theme-accent/30` : ''}
+                          ${isFeaturedWeapon(names[item.key]) && !item.isChar ? 'text-theme-accent font-bold border-theme-accent' : ''}
                         `}>
                           <SelectValue />
                         </SelectTrigger>
@@ -517,40 +435,53 @@ export function CitlaliInterface({ theme, currentBackground, onBackgroundChange 
                         </SelectContent>
 
                       </Select>
-                      <NumberInput min={0}
-                             value={(targets as any)[item.targetKey]} 
-                             onValueChange={v => setTargets({...targets,[item.targetKey]: v})} 
-                             className={item.isChar
-                               ? "!h-[60px] !w-[60px] rounded-xl bg-white/50 text-center text-lg font-semibold dark:bg-black/50"
-                               : "w-16 bg-white/50 dark:bg-black/50"} />
+                      <NumberInput
+                        id={`${theme}-${item.targetKey}`} min={0}
+                        value={targets[item.targetKey]}
+                        onValueChange={value => setTargets(previous => ({ ...previous, [item.targetKey]: value }))}
+                        aria-invalid={!!inputErrors[item.targetKey]}
+                        aria-describedby={inputErrors[item.targetKey] ? `${theme}-${item.targetKey}-error` : undefined}
+                        className={item.isChar
+                          ? "!h-[60px] !w-[60px] rounded-xl bg-white/50 text-center text-lg font-semibold dark:bg-black/50"
+                          : "w-16 bg-white/50 dark:bg-black/50"} />
                     </div>
+                    <InputError id={`${theme}-${item.targetKey}-error`} message={inputErrors[item.targetKey]} />
+                    {item.key === "cB" && <InputError id={`${theme}-cB-error`} message={inputErrors.cB} />}
                   </div>
                 ))}
+                <div className="col-span-full space-y-1 pt-1">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id={`${theme}-same-weapon-banner`}
+                      checked={sameWeaponBanner}
+                      onChange={event => {
+                        const checked = event.target.checked;
+                        setTargets(previous => ({ ...previous, sameWeaponBanner: checked }));
+                      }}
+                      aria-describedby={`${theme}-same-weapon-banner-help`}
+                      className="simulator-checkbox w-5 h-5 shrink-0 accent-theme-accent cursor-pointer rounded-sm"
+                    />
+                    <Label htmlFor={`${theme}-same-weapon-banner`} className="cursor-pointer font-semibold text-zinc-700 dark:text-zinc-300">
+                      武器 A 与武器 B 为同一期限定武器
+                    </Label>
+                  </div>
+                  <p id={`${theme}-same-weapon-banner-help`} className="pl-7 text-sm text-zinc-600 dark:text-zinc-300">
+                    {sameWeaponBanner
+                      ? "定轨 A 时先抽到 B 计入 B 的目标"
+                      : "先抽齐 A, 再抽齐 B, 歪出的武器不计入目标"}
+                  </p>
+                </div>
+                {inputErrors.targets && (
+                  <div className="col-span-full"><InputError id={`${theme}-targets-error`} message={inputErrors.targets} /></div>
+                )}
               </div>
 
               <CalculateButton loading={loading} onClick={startSim} className="w-full md:hidden" />
             </CardContent>
           </Card>
 
-          {report?.negative ? (
-            <div ref={resultRef} className="space-y-6 animate-in fade-in zoom-in-95 duration-500">
-              <div className="text-center py-6 bg-white/70 dark:bg-black/50 backdrop-blur-sm rounded-2xl shadow-sm mx-auto max-w-xl">
-                <h2 className="text-2xl font-black text-orange-500 drop-shadow-md">
-                  {appearance.messages.negativeResources.title}<br />{appearance.messages.negativeResources.detail}
-                </h2>
-                <p className="text-zinc-600 font-bold mt-2">预计成功率</p>
-              </div>
-            </div>
-          ) : report?.empty ? (
-            <div ref={resultRef} className="space-y-6 animate-in fade-in zoom-in-95 duration-500">
-              <div className="text-center py-6 bg-white/70 dark:bg-black/50 backdrop-blur-sm rounded-2xl shadow-sm mx-auto max-w-xl">
-                <h2 className="text-2xl font-black text-orange-500 drop-shadow-md">
-                  {appearance.messages.emptyTargets.title}<br />{appearance.messages.emptyTargets.detail}
-                </h2>
-                <p className="text-zinc-600 font-bold mt-2">预计成功率</p>
-              </div>
-            </div>
-          ) : report && (
+          {report && reportTargets && (
             <div key={report.runId} ref={resultRef} className="space-y-6">
               <div className="motion-enter motion-burst text-center py-6 bg-white/70 dark:bg-black/50 backdrop-blur-sm rounded-2xl shadow-sm mx-auto max-w-sm" style={{ "--motion-i": 0 } as React.CSSProperties}>
                 
@@ -560,6 +491,16 @@ export function CitlaliInterface({ theme, currentBackground, onBackgroundChange 
                 </h2>
 
                 <p className="text-zinc-600 font-bold mt-2">预计成功率</p>
+                {reportTargets.weapA > 0 && reportTargets.weapB > 0 && (
+                  <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-300">
+                    {(reportTargets.sameWeaponBanner ?? true) ? "双武器按同池计算" : "双武器分期计算，先抽齐 A，再抽齐 B"}
+                  </p>
+                )}
+                {reportIsStale && (
+                  <p role="status" className="mt-3 text-sm font-semibold text-amber-800 dark:text-amber-300">
+                    条件已修改，请重新计算,  下方仍显示上次计算的结果
+                  </p>
+                )}
               </div>
 
               <Card className="shadow-lg border-white/50 bg-white/85 dark:bg-zinc-950/85 backdrop-blur-md w-full motion-enter" style={{ "--motion-i": 1 } as React.CSSProperties}>
@@ -574,7 +515,7 @@ export function CitlaliInterface({ theme, currentBackground, onBackgroundChange 
                 <CardContent>
                   <div className="h-[350px] w-full mt-4">
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={report.trimmedHistData} margin={{ top: 24, right: 20, left: 0, bottom: 20 }}>
+                      <BarChart data={report.histData} margin={{ top: 24, right: 20, left: 0, bottom: 20 }}>
                         <defs>
                           <linearGradient id={`${theme}-clash`} x1="1" y1="0" x2="0" y2="1">
                             <stop offset="0%" stopColor={appearance.colors.chartStart} stopOpacity={0.95} />
@@ -587,9 +528,23 @@ export function CitlaliInterface({ theme, currentBackground, onBackgroundChange 
                         <YAxis tick={{fontSize: 12, fill: '#475569'}} />
                         <Tooltip content={<CustomTooltip />} cursor={{fill: appearance.colors.chartCursor, opacity: 0.15}} />
                         <Bar dataKey="发生次数" fill={`url(#${theme}-clash)`} radius={[4, 4, 0, 0]} isAnimationActive={true} animationDuration={1000} />
-                        {report.budgetBin && (
-                          <ReferenceLine x={report.budgetBin} stroke="#3f3f46" strokeWidth={2} strokeDasharray="6 4"
-                            label={{ value: `你的 ${report.budget} 抽`, position: 'top', textAnchor: report.budgetLabelAnchor, fill: '#3f3f46', fontSize: 12, fontWeight: 700 }} />
+                        {budgetMarker && (
+                          <ReferenceLine
+                            x={budgetMarker.bin}
+                            stroke="#3f3f46"
+                            strokeWidth={2}
+                            strokeDasharray="6 4"
+                            label={{
+                              value: budgetMarker.includesEstimatedReturn
+                                ? `含星辉约 ${budgetMarker.pulls} 抽`
+                                : `你的 ${budgetMarker.pulls} 抽`,
+                              position: "top",
+                              textAnchor: budgetMarker.labelAnchor,
+                              fill: "#3f3f46",
+                              fontSize: 12,
+                              fontWeight: 700,
+                            }}
+                          />
                         )}
                       </BarChart>
                     </ResponsiveContainer>
@@ -626,16 +581,16 @@ export function CitlaliInterface({ theme, currentBackground, onBackgroundChange 
                   <CardContent className="bg-zinc-100/50 dark:bg-zinc-900/50 rounded-lg p-6 font-mono text-sm space-y-3 leading-relaxed border border-zinc-200/50">
                     <p>模拟平均总消耗: <span className="text-theme-accent font-bold text-base">{report.avgPulls.toFixed(1)} 抽</span></p>
                     <p>白板理论总期望: {report.theoryAvg.toFixed(1)} 抽 <span className="text-xs text-zinc-500">(0垫0保底对比参考)</span></p>
-                    <p>每金平均成本: {(report.avgPulls / Math.max(1, (targets.charA+targets.charB+targets.weapA+targets.weapB))).toFixed(1)} 抽</p>
+                    <p>每金平均成本: {(report.avgPulls / report.totalTargets).toFixed(1)} 抽</p>
                     <div className="h-px bg-zinc-300 dark:bg-zinc-700 my-4" />
                     <p>平均星辉返还: {report.avgDust.toFixed(1)}</p>
                     <p>平均粉球返还: {report.avgBallsBack} 抽 (约计)</p>
                     <p className="text-lg pt-3">平均净消耗(近似): <br/><span className="text-theme-accent font-bold text-2xl">{report.netCost.toFixed(1)} 抽</span></p>
                     <p className="pt-2 text-zinc-600">
-                      目标: {targets.charA > 0 && <span className={isFeaturedCharacter(names.cA) ? `${THEME_ACCENT_TEXT} font-bold` : ''}>{names.cA} </span>}
-                      {targets.charB > 0 && <span className={isFeaturedCharacter(names.cB) ? `${THEME_ACCENT_TEXT} font-bold` : ''}>{names.cB} </span>}
-                      {targets.weapA > 0 && <span className={isFeaturedWeapon(names.wA) ? 'text-theme-accent font-bold' : ''}>{names.wA} </span>}
-                      {targets.weapB > 0 && <span className={isFeaturedWeapon(names.wB) ? 'text-theme-accent font-bold' : ''}>{names.wB} </span>}
+                      目标: {reportTargets.charA > 0 && <span className={isFeaturedCharacter(report.input.names.cA) ? `${THEME_ACCENT_TEXT} font-bold` : ''}>{report.input.names.cA} ×{reportTargets.charA} </span>}
+                      {reportTargets.charB > 0 && <span className={isFeaturedCharacter(report.input.names.cB) ? `${THEME_ACCENT_TEXT} font-bold` : ''}>{report.input.names.cB} ×{reportTargets.charB} </span>}
+                      {reportTargets.weapA > 0 && <span className={isFeaturedWeapon(report.input.names.wA) ? 'text-theme-accent font-bold' : ''}>{report.input.names.wA} ×{reportTargets.weapA} </span>}
+                      {reportTargets.weapB > 0 && <span className={isFeaturedWeapon(report.input.names.wB) ? 'text-theme-accent font-bold' : ''}>{report.input.names.wB} ×{reportTargets.weapB} </span>}
                     </p>
                   </CardContent>
                 </Card>
@@ -649,7 +604,7 @@ export function CitlaliInterface({ theme, currentBackground, onBackgroundChange 
                     
                     const parts = key.split('|').map(p => {
                       const[k, v] = p.split(':');
-                      const realName = (names as any)[k];
+                      const realName = report.input.names[k as keyof typeof report.input.names];
                       const isWeap = k.startsWith('w');
                       const highlightClass = isWeap 
                         ? (isFeaturedWeapon(realName) ? 'text-theme-accent font-bold' : '')
